@@ -1,24 +1,27 @@
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mensageiro CLX</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; height: 100dvh; }
+        body { font-family: 'Inter', sans-serif; height: 100dvh; margin: 0; padding: 0; overflow: hidden; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .msg-self { border-radius: 18px 18px 2px 18px; }
-        .msg-other { border-radius: 18px 18px 18px 2px; }
-        ::-webkit-scrollbar { width: 6px; }
+        .msg-self { border-radius: 18px 18px 2px 18px; align-self: flex-end; }
+        .msg-other { border-radius: 18px 18px 18px 2px; align-self: flex-start; }
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .active-chat-item { background-color: #f1f5f9; border-left: 4px solid #2563eb; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.2s ease-out forwards; }
+        #messages-container { display: flex; flex-direction: column; }
     </style>
 </head>
-<body class="bg-slate-100 overflow-hidden">
+<body class="bg-slate-100">
 
+    <!-- Tela de Login -->
     <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 px-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
             <div class="text-center mb-8">
@@ -30,28 +33,29 @@
             <div id="auth-fields" class="space-y-4">
                 <input type="text" id="login-user" placeholder="Usuário" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition">
                 <div id="email-field" class="hidden">
-                    <input type="email" id="login-email" placeholder="E-mail" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    <input type="email" id="login-email" placeholder="Seu melhor E-mail" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition">
                 </div>
                 <input type="password" id="login-pass" placeholder="Senha" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition">
                 
                 <button onclick="handleAuth()" id="btn-auth" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-100 active:scale-95">Entrar</button>
                 
                 <div class="text-center mt-4">
-                    <button id="toggle-mode" onclick="toggleAuthMode()" class="text-sm text-blue-600 hover:underline">Não tem conta? Criar conta</button>
+                    <button id="toggle-mode" onclick="toggleAuthMode()" class="text-sm text-blue-600 hover:underline">Não tem conta? Criar conta agora</button>
                 </div>
             </div>
             <p id="login-error" class="text-red-500 text-xs mt-4 text-center hidden font-medium"></p>
         </div>
     </div>
 
-    <div id="app-screen" class="hidden h-screen flex flex-col md:flex-row overflow-hidden bg-slate-50">
+    <!-- Tela Principal do App -->
+    <div id="app-screen" class="hidden h-screen w-full flex overflow-hidden bg-white">
         
         <!-- Barra Lateral -->
-        <aside id="sidebar" class="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col z-10 h-full">
-            <div class="p-6 border-b border-slate-100 bg-white">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center space-x-3">
-                        <div id="my-avatar" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-inner">U</div>
+        <aside id="sidebar" class="w-full md:w-80 flex flex-col border-r border-slate-200 bg-white z-20 h-full">
+            <div class="p-4 border-b border-slate-100 bg-white">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div id="my-avatar" class="w-10 h-10 bg-slate-800 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-inner">U</div>
                         <div class="overflow-hidden">
                             <p id="my-name" class="font-bold text-slate-800 leading-none truncate">Usuário</p>
                             <p id="my-id-display" class="text-[10px] text-blue-600 font-bold mt-1">#000000</p>
@@ -62,53 +66,59 @@
                     </button>
                 </div>
 
-                <!-- Controles Master -->
+                <!-- Botões Master CLX -->
                 <div id="master-controls" class="hidden grid grid-cols-2 gap-2 mb-4">
-                    <button onclick="toggleMasterPanel('users')" class="text-[10px] font-black tracking-tighter bg-slate-900 text-white py-2 rounded-lg hover:bg-black transition">USUÁRIOS</button>
-                    <button onclick="toggleMasterPanel('chats')" class="text-[10px] font-black tracking-tighter bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">MONITORAR</button>
+                    <button onclick="toggleMasterPanel('users')" class="text-[9px] font-black tracking-tighter bg-slate-900 text-white py-2 rounded-lg hover:bg-black transition uppercase">Usuários</button>
+                    <button onclick="toggleMasterPanel('chats')" class="text-[9px] font-black tracking-tighter bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition uppercase">Chats</button>
                 </div>
 
                 <div class="relative">
-                    <input type="text" id="search-id" placeholder="Adicionar por ID..." class="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition outline-none">
+                    <input type="text" id="search-id" placeholder="Adicionar ID de alguém..." class="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                 </div>
             </div>
 
-            <div id="contacts-list" class="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-50/50">
-                <!-- Carregamento dinâmico aqui -->
+            <!-- Lista de Conversas Recentes / Contatos -->
+            <div id="contacts-list" class="flex-1 overflow-y-auto p-2 space-y-1 bg-white">
+                <!-- Preenchido via Firebase -->
             </div>
         </aside>
 
-        <!-- Área de Chat -->
-        <main id="chat-area" class="flex-1 hidden md:flex flex-col bg-white relative h-full">
-            <div id="chat-welcome" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white">
-                <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        <main id="chat-area" class="flex-1 hidden md:flex flex-col bg-white h-full relative overflow-hidden">
+            
+            <!-- Mensagem Inicial -->
+            <div id="chat-welcome" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50">
+                <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                 </div>
-                <h2 class="text-xl font-bold text-slate-800">Mensageiro CLX</h2>
-                <p class="text-slate-400 max-w-xs mx-auto mt-2 text-sm leading-relaxed">Selecione uma conversa ou adicione um ID para começar.</p>
+                <h2 class="text-xl font-bold text-slate-800">Mensagens CLX</h2>
+                <p class="text-slate-400 max-w-xs mx-auto mt-2 text-xs leading-relaxed">Selecione uma conversa ao lado ou adicione um ID para começar a enviar mensagens.</p>
             </div>
 
-            <div id="active-chat" class="hidden flex-1 flex flex-col h-full bg-slate-50">
-                <header class="p-4 border-b border-slate-100 flex items-center bg-white sticky top-0 z-20 shadow-sm">
+            <!-- Área Ativa do Chat -->
+            <div id="active-chat" class="hidden flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
+                <!-- Cabeçalho do Chat -->
+                <header class="h-16 flex-shrink-0 flex items-center px-4 border-b border-slate-100 bg-white shadow-sm z-10">
                     <button onclick="backToSidebar()" class="md:hidden mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                     </button>
-                    <div id="chat-avatar" class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-sm">?</div>
-                    <div class="ml-3">
-                        <p id="chat-with-name" class="font-bold text-slate-800 leading-none">Usuário</p>
-                        <p class="text-[9px] text-green-500 font-black uppercase tracking-widest mt-1">Conexão Segura</p>
+                    <div id="chat-avatar" class="w-10 h-10 bg-blue-600 rounded-full flex flex-shrink-0 items-center justify-center text-white font-bold shadow-sm text-sm">?</div>
+                    <div class="ml-3 overflow-hidden">
+                        <p id="chat-with-name" class="font-bold text-slate-800 leading-none truncate text-sm">Usuário</p>
+                        <p class="text-[9px] text-green-500 font-bold uppercase tracking-widest mt-1">Chat Seguro 24h</p>
                     </div>
                 </header>
 
-                <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
+                <!-- Container de Mensagens (Ocupa o meio) -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3">
                     <!-- Mensagens aqui -->
                 </div>
 
-                <footer class="p-4 bg-white border-t border-slate-100">
-                    <div class="max-w-4xl mx-auto flex items-center space-x-2">
+                <!-- Rodapé para Escrever (Sempre no fundo) -->
+                <footer class="flex-shrink-0 bg-white p-3 border-t border-slate-100">
+                    <div class="flex items-center space-x-2 max-w-4xl mx-auto">
                         <input type="text" id="msg-input" placeholder="Escreva sua mensagem..." class="flex-1 px-4 py-3 rounded-2xl bg-slate-100 border-none focus:ring-2 focus:ring-blue-600 transition text-sm outline-none">
-                        <button onclick="sendMessage()" class="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-100 active:scale-95">
+                        <button onclick="sendMessage()" class="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition shadow-lg active:scale-95">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                         </button>
                     </div>
@@ -139,11 +149,12 @@
         let unsubMessages = null;
         let unsubRooms = null;
 
+        /* Alternar entre Login e Cadastro */
         window.toggleAuthMode = () => {
             isSignUp = !isSignUp;
             document.getElementById('email-field').classList.toggle('hidden', !isSignUp);
-            document.getElementById('btn-auth').innerText = isSignUp ? 'Criar Minha Conta' : 'Entrar';
-            document.getElementById('toggle-mode').innerText = isSignUp ? 'Já tenho conta? Entrar' : 'Não tenho conta? Criar conta';
+            document.getElementById('btn-auth').innerText = isSignUp ? 'Criar minha conta agora' : 'Entrar';
+            document.getElementById('toggle-mode').innerText = isSignUp ? 'Já tem conta? Entrar' : 'Não tem conta? Criar conta agora';
         };
 
         window.handleAuth = async () => {
@@ -153,31 +164,28 @@
             const email = document.getElementById('login-email').value.trim();
             const errorEl = document.getElementById('login-error');
 
-            if (!user || !pass) return;
+            if (!user || !pass) {
+                errorEl.innerText = "Preencha usuário e senha!";
+                errorEl.classList.remove('hidden');
+                return;
+            }
             errorEl.classList.add('hidden');
 
             try {
                 if (isSignUp) {
                     if (!email) {
-                        errorEl.innerText = "E-mail é obrigatório!";
+                        errorEl.innerText = "E-mail é obrigatório para cadastro!";
                         errorEl.classList.remove('hidden');
                         return;
                     }
                     const userDoc = await getDoc(doc(db, "clx_users", user));
                     if (userDoc.exists()) {
-                        errorEl.innerText = "Este nome de usuário já existe!";
+                        errorEl.innerText = "Este login já existe! Tente outro.";
                         errorEl.classList.remove('hidden');
                         return;
                     }
                     const randomId = Math.floor(100000 + Math.random() * 900000).toString();
-                    /* Garantindo que todos os campos existam para evitar 'undefined' */
-                    const newUser = { 
-                        login: userRaw || "Usuário", 
-                        pass: pass, 
-                        email: email, 
-                        id: randomId, 
-                        createdAt: serverTimestamp() 
-                    };
+                    const newUser = { login: userRaw, pass: pass, email: email, id: randomId };
                     await setDoc(doc(db, "clx_users", user), newUser);
                     loginSuccess(newUser);
                 } else {
@@ -189,17 +197,18 @@
                     if (userDoc.exists() && userDoc.data().pass === pass) {
                         loginSuccess(userDoc.data());
                     } else {
-                        errorEl.innerText = "Usuário ou senha inválidos!";
+                        errorEl.innerText = "Usuário ou senha incorretos!";
                         errorEl.classList.remove('hidden');
                     }
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Erro na autenticação:", e);
+                errorEl.innerText = "Erro ao conectar. Verifique sua rede.";
+                errorEl.classList.remove('hidden');
             }
         };
 
         function loginSuccess(userData) {
-            /* Fallback para evitar que campos essenciais fiquem undefined */
             currentUser = {
                 login: userData.login || "Usuário",
                 id: userData.id || "000000",
@@ -210,7 +219,7 @@
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('my-name').innerText = currentUser.login.toUpperCase();
             document.getElementById('my-id-display').innerText = `#${currentUser.id}`;
-            document.getElementById('my-avatar').innerText = currentUser.login[0].toUpperCase();
+            document.getElementById('my-avatar').innerText = (currentUser.login[0] || "U").toUpperCase();
             
             if (currentUser.isMaster) {
                 document.getElementById('master-controls').classList.remove('hidden');
@@ -228,8 +237,10 @@
                 const currentMode = list.getAttribute('data-mode');
                 if (currentMode === 'master-users') return;
 
-                list.innerHTML = snapshot.empty ? 
-                    "<p class='text-center text-[10px] text-slate-400 mt-10 uppercase tracking-widest'>Nenhuma conversa ativa</p>" : "";
+                list.innerHTML = "";
+                if (snapshot.empty) {
+                    list.innerHTML = "<p class='text-center text-[10px] text-slate-400 mt-10 uppercase font-bold'>Nenhuma conversa ainda</p>";
+                }
                 
                 snapshot.forEach(roomDoc => {
                     const data = roomDoc.data();
@@ -237,16 +248,16 @@
                     const names = data.participantsNames || [];
                     
                     if (currentUser && (participants.includes(currentUser.id) || currentUser.isMaster)) {
-                        const otherName = names.find(n => n.toLowerCase() !== (currentUser.login || "").toLowerCase()) || "Conversa";
+                        const otherName = names.find(n => n.toLowerCase() !== currentUser.login.toLowerCase()) || "Conversa";
                         
                         const div = document.createElement('div');
-                        div.className = `flex items-center p-3 rounded-xl cursor-pointer transition mb-1 ${activeChatId === roomDoc.id ? 'active-chat-item' : 'hover:bg-slate-100'}`;
+                        div.className = `flex items-center p-3 rounded-xl cursor-pointer transition mb-1 ${activeChatId === roomDoc.id ? 'active-chat-item' : 'hover:bg-slate-50'}`;
                         div.onclick = () => selectChat(otherName, roomDoc.id);
                         div.innerHTML = `
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">${(otherName[0] || "?").toUpperCase()}</div>
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex-shrink-0 flex items-center justify-center text-blue-600 font-bold text-sm">${otherName[0].toUpperCase()}</div>
                             <div class="ml-3 overflow-hidden">
                                 <p class="text-sm font-bold text-slate-800 truncate">${otherName}</p>
-                                <p class="text-[9px] text-slate-400 uppercase tracking-tighter">ID: ${roomDoc.id.slice(0,8)}...</p>
+                                <p class="text-[9px] text-slate-400 font-bold">ÚLTIMO CONTATO</p>
                             </div>
                         `;
                         list.appendChild(div);
@@ -266,8 +277,9 @@
 
             document.getElementById('chat-welcome').classList.add('hidden');
             document.getElementById('active-chat').classList.remove('hidden');
+            document.getElementById('active-chat').classList.add('flex');
             document.getElementById('chat-with-name').innerText = name;
-            document.getElementById('chat-avatar').innerText = (name[0] || "?").toUpperCase();
+            document.getElementById('chat-avatar').innerText = name[0].toUpperCase();
 
             startMessageListener();
         }
@@ -275,36 +287,38 @@
         function startMessageListener() {
             if (unsubMessages) unsubMessages();
             
-            const msgRef = collection(db, `clx_chats/${activeChatId}/messages`);
+            /* Antes era clx_messenger/chats/ID/messages (4 partes - erro). Agora é clx_chats/ID/messages (3 partes - ok) */
+            const msgRef = collection(db, "clx_chats", activeChatId, "messages");
             const q = query(msgRef, orderBy("timestamp", "asc"));
             
             unsubMessages = onSnapshot(q, (snapshot) => {
                 const container = document.getElementById('messages-container');
                 container.innerHTML = "";
                 const now = Date.now();
-                const dayInMs = 86400000; // 24 horas
+                const oneDayInMs = 24 * 60 * 60 * 1000;
 
                 snapshot.forEach(async (mDoc) => {
                     const m = mDoc.data();
                     
-                    /* Limpeza 24 Horas */
-                    if (m.timestamp && (now - m.timestamp.toMillis() > dayInMs)) {
-                        await deleteDoc(doc(db, `clx_chats/${activeChatId}/messages`, mDoc.id));
+                    // Verificação de 24 horas
+                    if (m.timestamp && (now - m.timestamp.toMillis() > oneDayInMs)) {
+                        await deleteDoc(doc(db, "clx_chats", activeChatId, "messages", mDoc.id));
                         return;
                     }
 
                     const isMine = m.senderId === currentUser.id;
                     const div = document.createElement('div');
-                    div.className = `flex ${isMine ? 'justify-end' : 'justify-start'} animate-in`;
+                    div.className = `flex w-full ${isMine ? 'justify-end' : 'justify-start'} animate-in`;
                     div.innerHTML = `
-                        <div class="max-w-[85%] p-3 shadow-sm ${isMine ? 'bg-blue-600 text-white msg-self' : 'bg-white text-slate-700 msg-other border border-slate-100'}">
-                            <p class="text-[13px] leading-relaxed">${m.text}</p>
+                        <div class="max-w-[80%] p-3 shadow-sm ${isMine ? 'bg-blue-600 text-white msg-self' : 'bg-white text-slate-700 msg-other border border-slate-100'}">
+                            <p class="text-[13px] leading-relaxed break-words">${m.text}</p>
                             <p class="text-[8px] mt-1 opacity-60 text-right font-bold">${m.timestamp ? new Date(m.timestamp.toMillis()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</p>
                         </div>
                     `;
                     container.appendChild(div);
                 });
-                container.scrollTop = container.scrollHeight;
+                // Rolar para o fim
+                setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
             });
         }
 
@@ -313,15 +327,23 @@
             const text = input.value.trim();
             if (!text || !activeChatId) return;
 
-            const msgRef = collection(db, `clx_chats/${activeChatId}/messages`);
-            await addDoc(msgRef, {
-                text,
-                senderId: currentUser.id,
-                senderName: currentUser.login,
-                timestamp: serverTimestamp()
-            });
+            try {
+                const msgRef = collection(db, "clx_chats", activeChatId, "messages");
+                await addDoc(msgRef, {
+                    text: text,
+                    senderId: currentUser.id,
+                    senderName: currentUser.login,
+                    timestamp: serverTimestamp()
+                });
 
-            input.value = "";
+                // Atualizar sala ativa para mostrar no topo da lista
+                await setDoc(doc(db, "clx_active_rooms", activeChatId), { lastUpdate: serverTimestamp() }, { merge: true });
+
+                input.value = "";
+                input.focus();
+            } catch (err) {
+                console.error("Falha ao enviar:", err);
+            }
         };
 
         document.getElementById('search-id').addEventListener('keypress', async (e) => {
@@ -337,44 +359,36 @@
                     const otherUser = snap.docs[0].data();
                     const chatId = [currentUser.id, otherUser.id].sort().join('_');
                     
-                    /* PROTEÇÃO CONTRA UNDEFINED: Verificando cada campo antes de enviar */
-                    const dataToSave = {
-                        participantsIds: [currentUser.id, otherUser.id].filter(id => id !== undefined),
-                        participantsNames: [(currentUser.login || "Usuário"), (otherUser.login || "Usuário")],
+                    await setDoc(doc(db, "clx_active_rooms", chatId), {
+                        participantsIds: [currentUser.id, otherUser.id],
+                        participantsNames: [currentUser.login, otherUser.login],
                         lastUpdate: serverTimestamp()
-                    };
+                    });
 
-                    try {
-                        await setDoc(doc(db, "clx_active_rooms", chatId), dataToSave);
-                        selectChat(otherUser.login || "Usuário", chatId);
-                        e.target.value = "";
-                    } catch (err) {
-                        console.error("Erro ao criar sala:", err);
-                    }
+                    selectChat(otherUser.login, chatId);
+                    e.target.value = "";
+                } else {
+                    alert("Usuário não encontrado!");
                 }
             }
         });
 
         window.toggleMasterPanel = async (mode) => {
             const list = document.getElementById('contacts-list');
-            list.innerHTML = "<p class='p-4 text-[10px] text-slate-400 font-bold uppercase animate-pulse text-center'>Carregando...</p>";
+            list.innerHTML = "<p class='p-4 text-[10px] text-slate-400 font-bold uppercase animate-pulse text-center'>Acessando dados...</p>";
             
             if (mode === 'users') {
                 list.setAttribute('data-mode', 'master-users');
                 const snap = await getDocs(collection(db, "clx_users"));
-                list.innerHTML = "<h3 class='p-3 text-[10px] font-black text-slate-400 bg-slate-100 uppercase tracking-widest'>Base de Usuários</h3>";
+                list.innerHTML = "<h3 class='p-3 text-[10px] font-black text-slate-400 bg-slate-50 uppercase tracking-widest'>Todos os Usuários</h3>";
                 
                 snap.forEach(uDoc => {
                     const u = uDoc.data();
-                    /* Correção do erro toUpperCase em campos vazios */
-                    const loginName = u.login || "Usuário sem nome";
-                    const userId = u.id || "000000";
-                    
                     const div = document.createElement('div');
-                    div.className = "p-3 border-b border-slate-100 hover:bg-white transition animate-in";
+                    div.className = "p-3 border-b border-slate-50 hover:bg-slate-50 transition";
                     div.innerHTML = `
-                        <p class='text-xs font-black text-slate-900'>${loginName.toUpperCase()}</p>
-                        <p class='text-[10px] text-blue-600 font-bold'>ID: #${userId}</p>
+                        <p class='text-xs font-bold text-slate-900'>${(u.login || "SEM NOME").toUpperCase()}</p>
+                        <p class='text-[10px] text-blue-600 font-bold'>ID: #${u.id || '000000'}</p>
                     `;
                     list.appendChild(div);
                 });
@@ -387,11 +401,15 @@
         window.backToSidebar = () => {
             document.getElementById('sidebar').classList.remove('hidden');
             document.getElementById('chat-area').classList.add('hidden');
-            document.getElementById('chat-area').classList.remove('flex');
             activeChatId = null;
         };
 
         window.logout = () => location.reload();
+
+        // Enviar com a tecla Enter
+        document.getElementById('msg-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
 
     </script>
 </body>
