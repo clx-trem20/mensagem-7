@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -14,6 +13,8 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .active-chat-item { background-color: #f1f5f9; border-left: 4px solid #2563eb; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
     </style>
 </head>
 <body class="bg-slate-100 overflow-hidden">
@@ -61,6 +62,7 @@
                     </button>
                 </div>
 
+                <!-- Controles Master -->
                 <div id="master-controls" class="hidden grid grid-cols-2 gap-2 mb-4">
                     <button onclick="toggleMasterPanel('users')" class="text-[10px] font-black tracking-tighter bg-slate-900 text-white py-2 rounded-lg hover:bg-black transition">USUÁRIOS</button>
                     <button onclick="toggleMasterPanel('chats')" class="text-[10px] font-black tracking-tighter bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">MONITORAR</button>
@@ -73,17 +75,18 @@
             </div>
 
             <div id="contacts-list" class="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-50/50">
-                <!-- Lista carregada dinamicamente -->
+                <!-- Carregamento dinâmico aqui -->
             </div>
         </aside>
 
+        <!-- Área de Chat -->
         <main id="chat-area" class="flex-1 hidden md:flex flex-col bg-white relative h-full">
             <div id="chat-welcome" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white">
                 <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                 </div>
                 <h2 class="text-xl font-bold text-slate-800">Mensageiro CLX</h2>
-                <p class="text-slate-400 max-w-xs mx-auto mt-2 text-sm leading-relaxed">Adicione o ID de um contato para iniciar uma conversa criptografada.</p>
+                <p class="text-slate-400 max-w-xs mx-auto mt-2 text-sm leading-relaxed">Selecione uma conversa ou adicione um ID para começar.</p>
             </div>
 
             <div id="active-chat" class="hidden flex-1 flex flex-col h-full bg-slate-50">
@@ -144,51 +147,72 @@
         };
 
         window.handleAuth = async () => {
-            const user = document.getElementById('login-user').value.trim().toLowerCase();
+            const userRaw = document.getElementById('login-user').value.trim();
+            const user = userRaw.toLowerCase();
             const pass = document.getElementById('login-pass').value.trim();
             const email = document.getElementById('login-email').value.trim();
             const errorEl = document.getElementById('login-error');
 
-            if (!user || !pass) return alert("Preencha Usuário e Senha");
-
+            if (!user || !pass) return;
             errorEl.classList.add('hidden');
 
-            if (isSignUp) {
-                if (!email) return alert("E-mail é obrigatório para cadastro");
-                const userDoc = await getDoc(doc(db, "clx_users", user));
-                if (userDoc.exists()) {
-                    errorEl.innerText = "Este nome de usuário já existe!";
-                    errorEl.classList.remove('hidden');
-                    return;
-                }
-                const randomId = Math.floor(100000 + Math.random() * 900000).toString();
-                const newUser = { login: user, pass, email, id: randomId, createdAt: serverTimestamp() };
-                await setDoc(doc(db, "clx_users", user), newUser);
-                loginSuccess(newUser);
-            } else {
-                if (user === 'clx' && pass === '02072007') {
-                    loginSuccess({ login: 'clx', id: 'MASTER', isMaster: true });
-                    return;
-                }
-                const userDoc = await getDoc(doc(db, "clx_users", user));
-                if (userDoc.exists() && userDoc.data().pass === pass) {
-                    loginSuccess(userDoc.data());
+            try {
+                if (isSignUp) {
+                    if (!email) {
+                        errorEl.innerText = "E-mail é obrigatório!";
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                    const userDoc = await getDoc(doc(db, "clx_users", user));
+                    if (userDoc.exists()) {
+                        errorEl.innerText = "Este nome de usuário já existe!";
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                    const randomId = Math.floor(100000 + Math.random() * 900000).toString();
+                    /* Garantindo que todos os campos existam para evitar 'undefined' */
+                    const newUser = { 
+                        login: userRaw || "Usuário", 
+                        pass: pass, 
+                        email: email, 
+                        id: randomId, 
+                        createdAt: serverTimestamp() 
+                    };
+                    await setDoc(doc(db, "clx_users", user), newUser);
+                    loginSuccess(newUser);
                 } else {
-                    errorEl.innerText = "Usuário ou senha inválidos!";
-                    errorEl.classList.remove('hidden');
+                    if (user === 'clx' && pass === '02072007') {
+                        loginSuccess({ login: 'CLX', id: 'MASTER', isMaster: true });
+                        return;
+                    }
+                    const userDoc = await getDoc(doc(db, "clx_users", user));
+                    if (userDoc.exists() && userDoc.data().pass === pass) {
+                        loginSuccess(userDoc.data());
+                    } else {
+                        errorEl.innerText = "Usuário ou senha inválidos!";
+                        errorEl.classList.remove('hidden');
+                    }
                 }
+            } catch (e) {
+                console.error(e);
             }
         };
 
         function loginSuccess(userData) {
-            currentUser = userData;
+            /* Fallback para evitar que campos essenciais fiquem undefined */
+            currentUser = {
+                login: userData.login || "Usuário",
+                id: userData.id || "000000",
+                isMaster: userData.isMaster || false
+            };
+            
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('my-name').innerText = userData.login.toUpperCase();
-            document.getElementById('my-id-display').innerText = `#${userData.id}`;
-            document.getElementById('my-avatar').innerText = userData.login[0].toUpperCase();
+            document.getElementById('my-name').innerText = currentUser.login.toUpperCase();
+            document.getElementById('my-id-display').innerText = `#${currentUser.id}`;
+            document.getElementById('my-avatar').innerText = currentUser.login[0].toUpperCase();
             
-            if (userData.isMaster) {
+            if (currentUser.isMaster) {
                 document.getElementById('master-controls').classList.remove('hidden');
             }
 
@@ -202,17 +226,16 @@
             unsubRooms = onSnapshot(roomsRef, (snapshot) => {
                 const list = document.getElementById('contacts-list');
                 const currentMode = list.getAttribute('data-mode');
-                if (currentMode === 'master-users') return; // Não sobrescrever painel master de usuários
+                if (currentMode === 'master-users') return;
 
                 list.innerHTML = snapshot.empty ? 
-                    "<p class='text-center text-[10px] text-slate-400 mt-10 uppercase tracking-widest'>Nenhuma conversa</p>" : "";
+                    "<p class='text-center text-[10px] text-slate-400 mt-10 uppercase tracking-widest'>Nenhuma conversa ativa</p>" : "";
                 
                 snapshot.forEach(roomDoc => {
                     const data = roomDoc.data();
                     const participants = data.participantsIds || [];
                     const names = data.participantsNames || [];
                     
-                    /* Correção do erro: Verificar se currentUser e arrays existem */
                     if (currentUser && (participants.includes(currentUser.id) || currentUser.isMaster)) {
                         const otherName = names.find(n => n.toLowerCase() !== (currentUser.login || "").toLowerCase()) || "Conversa";
                         
@@ -220,10 +243,10 @@
                         div.className = `flex items-center p-3 rounded-xl cursor-pointer transition mb-1 ${activeChatId === roomDoc.id ? 'active-chat-item' : 'hover:bg-slate-100'}`;
                         div.onclick = () => selectChat(otherName, roomDoc.id);
                         div.innerHTML = `
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">${otherName[0].toUpperCase()}</div>
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">${(otherName[0] || "?").toUpperCase()}</div>
                             <div class="ml-3 overflow-hidden">
                                 <p class="text-sm font-bold text-slate-800 truncate">${otherName}</p>
-                                <p class="text-[9px] text-slate-400 uppercase tracking-tighter">ID da Sala: ${roomDoc.id.slice(0,8)}...</p>
+                                <p class="text-[9px] text-slate-400 uppercase tracking-tighter">ID: ${roomDoc.id.slice(0,8)}...</p>
                             </div>
                         `;
                         list.appendChild(div);
@@ -244,7 +267,7 @@
             document.getElementById('chat-welcome').classList.add('hidden');
             document.getElementById('active-chat').classList.remove('hidden');
             document.getElementById('chat-with-name').innerText = name;
-            document.getElementById('chat-avatar').innerText = name[0].toUpperCase();
+            document.getElementById('chat-avatar').innerText = (name[0] || "?").toUpperCase();
 
             startMessageListener();
         }
@@ -259,12 +282,12 @@
                 const container = document.getElementById('messages-container');
                 container.innerHTML = "";
                 const now = Date.now();
-                const dayInMs = 24 * 60 * 60 * 1000;
+                const dayInMs = 86400000; // 24 horas
 
                 snapshot.forEach(async (mDoc) => {
                     const m = mDoc.data();
                     
-                    /* Regra das 24 Horas: Deleta mensagens antigas */
+                    /* Limpeza 24 Horas */
                     if (m.timestamp && (now - m.timestamp.toMillis() > dayInMs)) {
                         await deleteDoc(doc(db, `clx_chats/${activeChatId}/messages`, mDoc.id));
                         return;
@@ -272,7 +295,7 @@
 
                     const isMine = m.senderId === currentUser.id;
                     const div = document.createElement('div');
-                    div.className = `flex ${isMine ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300`;
+                    div.className = `flex ${isMine ? 'justify-end' : 'justify-start'} animate-in`;
                     div.innerHTML = `
                         <div class="max-w-[85%] p-3 shadow-sm ${isMine ? 'bg-blue-600 text-white msg-self' : 'bg-white text-slate-700 msg-other border border-slate-100'}">
                             <p class="text-[13px] leading-relaxed">${m.text}</p>
@@ -304,46 +327,54 @@
         document.getElementById('search-id').addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
                 const targetId = e.target.value.trim();
-                if (!targetId) return;
-                if (targetId === currentUser.id) return alert("Você não pode conversar com você mesmo!");
+                if (!targetId || !currentUser || targetId === currentUser.id) return;
 
                 const usersRef = collection(db, "clx_users");
                 const q = query(usersRef, where("id", "==", targetId), limit(1));
                 const snap = await getDocs(q);
 
-                if (snap.empty) {
-                    alert("ID não encontrado no sistema.");
-                } else {
+                if (!snap.empty) {
                     const otherUser = snap.docs[0].data();
                     const chatId = [currentUser.id, otherUser.id].sort().join('_');
                     
-                    await setDoc(doc(db, "clx_active_rooms", chatId), {
-                        participantsIds: [currentUser.id, otherUser.id],
-                        participantsNames: [currentUser.login, otherUser.login],
+                    /* PROTEÇÃO CONTRA UNDEFINED: Verificando cada campo antes de enviar */
+                    const dataToSave = {
+                        participantsIds: [currentUser.id, otherUser.id].filter(id => id !== undefined),
+                        participantsNames: [(currentUser.login || "Usuário"), (otherUser.login || "Usuário")],
                         lastUpdate: serverTimestamp()
-                    });
+                    };
 
-                    selectChat(otherUser.login, chatId);
-                    e.target.value = "";
+                    try {
+                        await setDoc(doc(db, "clx_active_rooms", chatId), dataToSave);
+                        selectChat(otherUser.login || "Usuário", chatId);
+                        e.target.value = "";
+                    } catch (err) {
+                        console.error("Erro ao criar sala:", err);
+                    }
                 }
             }
         });
 
         window.toggleMasterPanel = async (mode) => {
             const list = document.getElementById('contacts-list');
-            list.innerHTML = "<p class='p-4 text-[10px] text-slate-400 font-bold uppercase animate-pulse text-center'>Carregando Dados Master...</p>";
+            list.innerHTML = "<p class='p-4 text-[10px] text-slate-400 font-bold uppercase animate-pulse text-center'>Carregando...</p>";
             
             if (mode === 'users') {
                 list.setAttribute('data-mode', 'master-users');
                 const snap = await getDocs(collection(db, "clx_users"));
                 list.innerHTML = "<h3 class='p-3 text-[10px] font-black text-slate-400 bg-slate-100 uppercase tracking-widest'>Base de Usuários</h3>";
+                
                 snap.forEach(uDoc => {
                     const u = uDoc.data();
+                    /* Correção do erro toUpperCase em campos vazios */
+                    const loginName = u.login || "Usuário sem nome";
+                    const userId = u.id || "000000";
+                    
                     const div = document.createElement('div');
-                    div.className = "p-3 border-b border-slate-100 hover:bg-white transition";
+                    div.className = "p-3 border-b border-slate-100 hover:bg-white transition animate-in";
                     div.innerHTML = `
-                        <p class='text-xs font-black text-slate-900'>${u.login.toUpperCase()}</p>
-                        <p class='text-[10px] text-blue-600 font-bold'>ID: #${u.id}</p>
+                        <p class='text-xs font-black text-slate-900'>${loginName.toUpperCase()}</p>
+                        <p class='text-[10px] text-blue-600 font-bold'>ID: #${userId}</p>
                     `;
                     list.appendChild(div);
                 });
