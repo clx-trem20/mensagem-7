@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -35,23 +36,26 @@
 
         /* O SEGREDO DO SCROLL: min-height 0 e flex-1 */
         #messages-container { 
-            flex: 1; 
-            overflow-y: auto; /* Permite rolar apenas aqui */
+            flex: 1 1 auto; /* Permite crescer e encolher */
+            overflow-y: auto; 
             display: flex; 
             flex-direction: column; 
             padding: 1rem; 
             gap: 0.75rem;
-            min-height: 0; /* MUITO IMPORTANTE: força o flexbox a não estourar a tela */
+            min-height: 0;
+            max-height: calc(100dvh - 130px); /* Limite de altura dinâmico para garantir o scroll */
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
         }
 
         #active-chat-view { 
             height: 100%; 
+            max-height: 100dvh; /* Garante que a view de chat nunca passe da tela */
             display: flex; 
             flex-direction: column; 
             position: relative;
             background-color: #f1f5f9;
+            overflow: hidden; /* Trava vazamentos de layout */
         }
         
         /* Rodapé fixo que nunca some */
