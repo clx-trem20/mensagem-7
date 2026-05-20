@@ -1,341 +1,1225 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mensageiro CLX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecos do Tempo - Árvore de Recados</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Ornament Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        :root { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); }
-        
-        body, html { 
-            height: 100dvh; 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; /* Trava a tela inteira */
-            background-color: #f8fafc;
-            font-family: 'Inter', sans-serif;
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at center, #0d1b2a 0%, #010811 100%);
+            overflow-x: hidden;
         }
-
-        .msg-self { 
-            border-radius: 18px 18px 2px 18px; 
-            background-color: #2563eb; 
-            color: white; 
-            align-self: flex-end; 
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        .serif-title {
+            font-family: 'Cinzel', serif;
         }
-        .msg-other { 
-            border-radius: 18px 18px 18px 2px; 
-            background-color: white; 
-            color: #1e293b; 
-            align-self: flex-start; 
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        .handwritten {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
         }
-
-        /* O SEGREDO DO SCROLL: min-height 0 e flex-1 */
-        #messages-container { 
-            flex: 1 1 auto; /* Permite crescer e encolher */
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 1rem; 
-            gap: 0.75rem;
-            min-height: 0;
-            max-height: calc(100dvh - 130px); /* Limite de altura dinâmico para garantir o scroll */
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
+        /* Custom Glowing effects */
+        .glow-gold {
+            text-shadow: 0 0 10px rgba(234, 179, 8, 0.6), 0 0 20px rgba(234, 179, 8, 0.4);
         }
-
-        #active-chat-view { 
-            height: 100%; 
-            max-height: 100dvh; /* Garante que a view de chat nunca passe da tela */
-            display: flex; 
-            flex-direction: column; 
+        .glow-box-gold {
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+        }
+        .glow-box-green {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+        /* Snowy background canvas */
+        #snowCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .content-container {
             position: relative;
-            background-color: #f1f5f9;
-            overflow: hidden; /* Trava vazamentos de layout */
+            z-index: 2;
         }
-        
-        /* Rodapé fixo que nunca some */
-        #input-area { 
-            flex-shrink: 0; 
-            background: white; 
-            border-top: 1px solid #e2e8f0; 
-            padding: 0.75rem 1rem;
-            padding-bottom: calc(0.75rem + var(--sab));
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
         }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-msg { animation: fadeIn 0.2s ease-out forwards; }
+        ::-webkit-scrollbar-track {
+            background: rgba(13, 27, 42, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #eab308;
+            border-radius: 3px;
+        }
+        /* Ornament pulse animation */
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1) translate(-50%, -50%); filter: drop-shadow(0 0 2px rgba(255,255,255,0.4)); }
+            50% { transform: scale(1.1) translate(-45%, -45%); filter: drop-shadow(0 0 8px rgba(255,255,255,0.8)); }
+        }
+        .ornament-placed {
+            animation: pulse-slow 3s infinite ease-in-out;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .ornament-placed:hover {
+            transform: scale(1.3) translate(-38%, -38%) !important;
+            z-index: 50 !important;
+            filter: drop-shadow(0 0 12px rgba(255,255,255,1)) !important;
+        }
     </style>
 </head>
-<body>
+<body class="text-slate-100 min-h-screen pb-12">
 
-    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 px-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">CLX</div>
-                <h1 class="text-2xl font-bold text-slate-800">Mensageiro CLX</h1>
-                <p id="auth-subtitle" class="text-slate-500 text-sm">Conecte-se com segurança</p>
+    <!-- Canvas para Neve caindo -->
+    <canvas id="snowCanvas"></canvas>
+
+    <div class="content-container max-w-4xl mx-auto px-4 pt-6">
+        
+        <!-- HEADER GLOBAL -->
+        <header class="text-center mb-8 flex flex-col items-center">
+            <div class="flex items-center gap-2 mb-2 bg-slate-900/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-yellow-500/20 shadow-lg">
+                <span class="text-yellow-400 animate-pulse text-sm"><i class="fa-solid fa-tree"></i></span>
+                <span class="text-xs uppercase tracking-widest text-slate-300 font-semibold">Ecos do Tempo</span>
             </div>
-            <div class="space-y-3">
-                <input type="text" id="login-user" placeholder="Nome de Usuário" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 transition">
-                <div id="email-container" class="hidden">
-                    <input type="email" id="login-email" placeholder="Seu melhor E-mail" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 transition">
+            <h1 class="serif-title text-3xl md:text-5xl font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-300 to-yellow-500 mb-1">
+                Árvore de Recados
+            </h1>
+            <p class="text-slate-400 text-sm max-w-md">Pendure mensagens misteriosas que se revelam na hora mágica marcada pelo criador.</p>
+        </header>
+
+        <!-- AREA DE CARREGAMENTO INICIAL -->
+        <div id="loadingScreen" class="flex flex-col items-center justify-center py-20 bg-slate-900/40 backdrop-blur-lg border border-slate-800 rounded-3xl p-8 text-center shadow-2xl">
+            <div class="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+            <p class="text-slate-300 font-semibold text-lg animate-pulse">Conectando ao mundo dos desejos...</p>
+            <p class="text-slate-500 text-sm mt-2">Por favor, aguarde um instante.</p>
+        </div>
+
+        <!-- 1. TELA DE CRIAÇÃO (Exibida apenas quando NÃO houver link/parâmetro de árvore ativo) -->
+        <div id="homeScreen" class="hidden space-y-8">
+            <div class="bg-gradient-to-b from-slate-900/90 to-slate-950/90 backdrop-blur-lg border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
+                <h2 class="serif-title text-2xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl"></i> Cultive sua Árvore
+                </h2>
+                <p class="text-slate-300 text-sm leading-relaxed mb-6">
+                    Você entrou no painel de criação! Crie um espaço mágico online onde seus amigos podem pendurar presentes, cartinhas e recados de carinho. Você define o dia exato em que os recados serão revelados! Até lá, as cartinhas ficam guardadas a sete chaves.
+                </p>
+
+                <form id="createTreeForm" class="space-y-5">
+                    <!-- Nome da Árvore -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Seu Nome ou Nome do Grupo</label>
+                        <input type="text" id="treeOwnerName" required placeholder="Ex: Lucas, Família Silva, Terceirão" 
+                               class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all">
+                    </div>
+
+                    <!-- Escolha do Tema -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Tema Visual da Árvore</label>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Tema 1 -->
+                            <label class="cursor-pointer group relative block">
+                                <input type="radio" name="treeTheme" value="christmas" checked class="peer hidden">
+                                <div class="bg-slate-900/60 border-2 border-slate-800 rounded-2xl p-4 transition-all group-hover:border-emerald-600 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/20">
+                                    <div class="text-emerald-400 text-2xl mb-1"><i class="fa-solid fa-holly-berry"></i></div>
+                                    <h3 class="font-bold text-slate-200 text-sm">Clássico de Natal</h3>
+                                    <p class="text-xs text-slate-500 mt-1">Elegante pinheiro com luzes aconchegantes e tom verde tradicional.</p>
+                                </div>
+                            </label>
+                            <!-- Tema 2 -->
+                            <label class="cursor-pointer group relative block">
+                                <input type="radio" name="treeTheme" value="enchanted" class="peer hidden">
+                                <div class="bg-slate-900/60 border-2 border-slate-800 rounded-2xl p-4 transition-all group-hover:border-purple-600 peer-checked:border-purple-500 peer-checked:bg-purple-950/20">
+                                    <div class="text-purple-400 text-2xl mb-1"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                    <h3 class="font-bold text-slate-200 text-sm">Cúpula Encantada</h3>
+                                    <p class="text-xs text-slate-500 mt-1">Um visual místico de árvores fantásticas com néons roxos e azuis.</p>
+                                </div>
+                            </label>
+                            <!-- Tema 3 -->
+                            <label class="cursor-pointer group relative block">
+                                <input type="radio" name="treeTheme" value="golden" class="peer hidden">
+                                <div class="bg-slate-900/60 border-2 border-slate-800 rounded-2xl p-4 transition-all group-hover:border-yellow-600 peer-checked:border-yellow-500 peer-checked:bg-yellow-950/20">
+                                    <div class="text-yellow-400 text-2xl mb-1"><i class="fa-solid fa-crown"></i></div>
+                                    <h3 class="font-bold text-slate-200 text-sm">Estelar & Ouro</h3>
+                                    <p class="text-xs text-slate-500 mt-1">Estética requintada com galhos dourados, ideal para Ano Novo ou formaturas.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Data de Revelação -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Data e Hora de Abertura</label>
+                            <input type="datetime-local" id="treeRevealDate" required
+                                   class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all">
+                            <p class="text-[10px] text-slate-400 mt-1.5">Neste exato momento as mensagens se tornarão públicas para todos.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Código PIN do Criador (6 dígitos)</label>
+                            <input type="password" id="treeAdminPin" pattern="[0-9]{6}" required maxlength="6" placeholder="Ex: 123456" 
+                                   class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 tracking-widest text-center transition-all">
+                            <p class="text-[10px] text-slate-400 mt-1.5">Guarde este PIN para alterar a data limite depois!</p>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-bold py-4 px-6 rounded-xl transition-all shadow-xl hover:shadow-yellow-500/20 text-center flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-seedling text-lg"></i> Criar Minha Árvore Mágica
+                    </button>
+                </form>
+            </div>
+
+            <!-- Como Funciona Section -->
+            <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 text-center">
+                <h3 class="font-bold text-slate-200 mb-4">Como funciona a jornada?</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-full flex items-center justify-center font-bold text-sm mb-2">1</div>
+                        <h4 class="text-xs font-bold text-slate-300">Crie o seu link</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">Configure o visual de sua preferência e defina a data da grande revelação.</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-full flex items-center justify-center font-bold text-sm mb-2">2</div>
+                        <h4 class="text-xs font-bold text-slate-300">Compartilhe o link</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">Envie para amigos no Instagram ou WhatsApp para que eles deixem desejos secretos.</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-full flex items-center justify-center font-bold text-sm mb-2">3</div>
+                        <h4 class="text-xs font-bold text-slate-300">Vivencie a Revelação</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">No segundo exato do prazo limite, todos os enfeites da árvore podem ser abertos por qualquer um!</p>
+                    </div>
                 </div>
-                <input type="password" id="login-pass" placeholder="Sua Senha" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 transition">
-                <button onclick="handleAuth()" id="btn-auth" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold hover:bg-blue-700 transition active:scale-95">Entrar</button>
-                <button onclick="toggleAuthMode()" id="toggle-mode" class="w-full text-sm text-blue-600 font-medium hover:underline mt-2">Não tem conta? Criar conta</button>
             </div>
-            <p id="login-error" class="text-red-500 text-xs mt-4 text-center hidden font-bold"></p>
+        </div>
+
+        <!-- 2. TELA DA ÁRVORE PRINCIPAL (Exibida apenas se houver o ID correto na URL) -->
+        <div id="treeScreen" class="hidden space-y-6">
+            
+            <!-- Painel de Informações da Árvore e Temporizador -->
+            <div id="treeCardHeader" class="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
+                <div class="text-center md:text-left space-y-1">
+                    <span class="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1 rounded-full inline-block font-semibold">
+                        Árvore de Recados de
+                    </span>
+                    <h2 id="displayTreeName" class="serif-title text-2xl md:text-3xl font-extrabold text-yellow-400">Carregando...</h2>
+                    <p class="text-slate-400 text-xs">Clique na árvore para pendurar seus sentimentos em formato de enfeite.</p>
+                </div>
+
+                <!-- Painel do Cronômetro -->
+                <div class="bg-slate-950/80 border border-yellow-500/20 px-6 py-4 rounded-2xl text-center glow-box-gold w-full md:w-auto">
+                    <p id="countdownLabel" class="text-[10px] font-bold text-yellow-400 uppercase tracking-widest mb-1.5">
+                        Revelando em:
+                    </p>
+                    <!-- Ticking countdown elements -->
+                    <div id="countdownTimer" class="flex items-center justify-center gap-2 font-mono text-lg md:text-xl font-bold">
+                        <div>
+                            <span id="daysVal" class="bg-slate-900 border border-slate-800 px-2 py-1 rounded text-yellow-300">00</span>
+                            <span class="text-[10px] text-slate-500 block font-sans mt-1">dias</span>
+                        </div>
+                        <span class="text-slate-500">:</span>
+                        <div>
+                            <span id="hoursVal" class="bg-slate-900 border border-slate-800 px-2 py-1 rounded text-yellow-300">00</span>
+                            <span class="text-[10px] text-slate-500 block font-sans mt-1">h</span>
+                        </div>
+                        <span class="text-slate-500">:</span>
+                        <div>
+                            <span id="minsVal" class="bg-slate-900 border border-slate-800 px-2 py-1 rounded text-yellow-300">00</span>
+                            <span class="text-[10px] text-slate-500 block font-sans mt-1">min</span>
+                        </div>
+                        <span class="text-slate-500">:</span>
+                        <div>
+                            <span id="secsVal" class="bg-slate-900 border border-slate-800 px-2 py-1 rounded text-yellow-300">00</span>
+                            <span class="text-[10px] text-slate-500 block font-sans mt-1">seg</span>
+                        </div>
+                    </div>
+                    <!-- Banner Aberto -->
+                    <div id="revealedStatusBanner" class="hidden text-emerald-400 font-bold flex items-center justify-center gap-1.5 text-sm animate-bounce">
+                        <i class="fa-solid fa-lock-open"></i> MENSAGENS REVELADAS!
+                    </div>
+                </div>
+            </div>
+
+            <!-- ÁREA DO RENDERIZADOR DA ÁRVORE INTERATIVA -->
+            <div class="relative bg-slate-950/70 border border-slate-800 rounded-3xl p-4 md:p-8 shadow-2xl overflow-hidden flex flex-col items-center">
+                
+                <!-- Background ambient lights -->
+                <div id="themeLightGlow" class="absolute w-72 h-72 rounded-full bg-emerald-500/10 blur-[80px] -z-10 top-1/4"></div>
+
+                <!-- Feedback Visual de "Clique para posicionar" -->
+                <div id="clickPlacementInstructions" class="bg-yellow-500/15 border border-yellow-500/30 rounded-xl px-4 py-2.5 text-center text-xs text-yellow-200 max-w-md mb-6 animate-pulse hidden">
+                    🎯 <strong>Modo Posicionamento Ativo:</strong> Clique em qualquer galho da árvore abaixo para escolher onde pendurar seu enfeite!
+                </div>
+
+                <!-- O Conteiner da Árvore Física -->
+                <div id="treeContainer" class="relative w-full max-w-[420px] aspect-[4/5] cursor-pointer bg-slate-900/20 rounded-2xl select-none">
+                    
+                    <!-- SVG Ilustrativo da Árvore baseado no Tema selecionado -->
+                    <div id="treeSvgWrapper" class="w-full h-full flex items-center justify-center p-4">
+                        <!-- Christmas Tree Base SVG -->
+                        <svg id="svgChristmas" class="w-full h-full text-emerald-800" viewBox="0 0 100 120" fill="currentColor">
+                            <!-- Tronco -->
+                            <rect x="46" y="105" width="8" height="15" fill="#4a2c00" rx="1"/>
+                            <!-- Vaso -->
+                            <path d="M42 120 h16 l-3 -8 h-10 z" fill="#780000" />
+                            <!-- Folhagem Base -->
+                            <path d="M50 10 L15 105 h70 Z" fill="#064e3b" filter="drop-shadow(0 0 10px rgba(6,78,59,0.3))"/>
+                            <!-- Folhas Detalhe 2 -->
+                            <path d="M50 25 L20 95 h60 Z" fill="#047857"/>
+                            <!-- Folhas Detalhe 3 -->
+                            <path d="M50 40 L25 80 h50 Z" fill="#059669"/>
+                            <!-- Folhas Detalhe 4 -->
+                            <path d="M50 55 L32 65 h36 Z" fill="#10b981"/>
+                            
+                            <!-- Pisca-pisca Lines -->
+                            <path d="M50 20 Q55 35 40 45 T65 65 T35 85 T60 100" fill="none" stroke="#fbbf24" stroke-width="0.5" stroke-dasharray="1 3" class="animate-pulse" />
+                            
+                            <!-- Estrela do Topo -->
+                            <g fill="#f59e0b" filter="drop-shadow(0 0 8px #f59e0b)">
+                                <path d="M50 2 L52 8 L58 10 L52 12 L50 18 L48 12 L42 10 L48 8 Z" />
+                            </g>
+                        </svg>
+
+                        <!-- Enchanted Tree SVG -->
+                        <svg id="svgEnchanted" class="w-full h-full text-purple-800 hidden" viewBox="0 0 100 120" fill="currentColor">
+                            <!-- Tronco Místico -->
+                            <path d="M44 105 Q47 115 42 120 h16 Q53 115 56 105 z" fill="#2d1b4e"/>
+                            <!-- Folhagem Principal Espiral -->
+                            <path d="M50 10 C15 70 20 105 50 105 C80 105 85 70 50 10" fill="#3b0764" filter="drop-shadow(0 0 15px rgba(59,7,100,0.4))"/>
+                            <path d="M50 25 C25 70 30 95 50 95 C70 95 75 70 50 25" fill="#581c87"/>
+                            <path d="M50 40 C35 70 38 85 50 85 C62 85 65 70 50 40" fill="#701a75"/>
+                            <path d="M50 55 C42 70 45 78 50 78 C55 78 58 70 50 55" fill="#a21caf"/>
+                            <!-- Pisca pisca azul -->
+                            <path d="M50 15 C30 50 70 70 50 100" fill="none" stroke="#38bdf8" stroke-width="0.75" stroke-dasharray="1 4" class="animate-pulse" />
+                            <!-- Estrela do Topo Encantada -->
+                            <g fill="#c084fc" filter="drop-shadow(0 0 12px #c084fc)">
+                                <circle cx="50" cy="10" r="4"/>
+                                <path d="M50 2 L50 18 M42 10 L58 10" stroke="#c084fc" stroke-width="1"/>
+                            </g>
+                        </svg>
+
+                        <!-- Golden / Estelar SVG -->
+                        <svg id="svgGolden" class="w-full h-full text-amber-500 hidden" viewBox="0 0 100 120" fill="currentColor">
+                            <!-- Tronco Dourado -->
+                            <rect x="47" y="100" width="6" height="20" fill="#78350f" rx="1"/>
+                            <!-- Cone Dourado de Luxo -->
+                            <path d="M50 12 L20 100 h60 Z" fill="#78350f" />
+                            <path d="M50 15 L22 97 h56 Z" fill="#b45309" filter="drop-shadow(0 0 10px rgba(180,83,9,0.4))" />
+                            <path d="M50 25 L28 92 h44 Z" fill="#d97706" />
+                            <path d="M50 40 L34 85 h32 Z" fill="#f59e0b" />
+                            <path d="M50 55 L40 75 h20 Z" fill="#fbbf24" />
+                            <!-- Pisca pisca cintilante -->
+                            <path d="M50 20 L25 90 M50 20 L75 90 M50 40 L35 90 M50 40 L65 90" fill="none" stroke="#ffffff" stroke-width="0.5" stroke-dasharray="2 2" />
+                            <!-- Grande Estrela Estelar -->
+                            <g fill="#fffbeb" filter="drop-shadow(0 0 15px #fef08a)">
+                                <polygon points="50,2 53,10 61,10 54,15 57,23 50,18 43,23 46,15 39,10 47,10" />
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Div de Ornatos Colocados via JS -->
+                    <div id="ornamentsWrapper" class="absolute inset-0"></div>
+                </div>
+
+                <!-- Botões de Controle e Ações sob a Árvore -->
+                <div class="mt-8 flex flex-wrap gap-4 items-center justify-center w-full max-w-lg">
+                    <button id="btnPrepareOrnament" class="flex-1 min-w-[150px] bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-slate-950 font-bold py-3.5 px-4 rounded-xl shadow-lg hover:shadow-green-500/20 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-gift"></i> Pendurar Enfeite
+                    </button>
+                    <button id="btnShareTree" class="flex-1 min-w-[150px] bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold py-3.5 px-4 rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-share-nodes"></i> Compartilhar Link
+                    </button>
+                    <button id="btnOpenAdminPanel" class="bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-yellow-400 p-3.5 rounded-xl border border-slate-800 transition-all" title="Gerenciar Árvore">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+
+                <!-- Link de Voltar ou Criar Nova -->
+                <div class="mt-4 text-center">
+                    <a href="?" class="text-xs text-slate-500 hover:text-yellow-500 transition-all underline">Gostou da ideia? Clique aqui para criar a sua própria árvore!</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- MODAL 1: CRIAR ENFEITE (PENDURAR) -->
+    <div id="modalOrnament" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 relative shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <button class="absolute top-4 right-4 text-slate-500 hover:text-slate-200 text-xl btnCloseModal">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="text-center">
+                <h3 class="serif-title text-xl font-bold text-yellow-400">Escreva sua Cartinha</h3>
+                <p class="text-xs text-slate-400 mt-1">Sua mensagem ficará selada até a data limite programada.</p>
+            </div>
+
+            <!-- Formulário -->
+            <form id="ornamentForm" class="space-y-4">
+                <!-- Seletor de Enfeite Visual -->
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">1. Escolha seu Enfeite</label>
+                    <div class="grid grid-cols-5 gap-2">
+                        <!-- Bola -->
+                        <label class="cursor-pointer text-center group">
+                            <input type="radio" name="ornamentDesign" value="ball" checked class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 transition-all group-hover:border-red-500 peer-checked:border-red-500 peer-checked:bg-red-500/10 text-red-500">
+                                <i class="fa-solid fa-circle text-2xl"></i>
+                            </div>
+                            <span class="text-[9px] text-slate-500 mt-1 block">Bola</span>
+                        </label>
+                        <!-- Estrela -->
+                        <label class="cursor-pointer text-center group">
+                            <input type="radio" name="ornamentDesign" value="star" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 transition-all group-hover:border-yellow-500 peer-checked:border-yellow-500 peer-checked:bg-yellow-500/10 text-yellow-500">
+                                <i class="fa-solid fa-star text-2xl"></i>
+                            </div>
+                            <span class="text-[9px] text-slate-500 mt-1 block">Estrela</span>
+                        </label>
+                        <!-- Sino -->
+                        <label class="cursor-pointer text-center group">
+                            <input type="radio" name="ornamentDesign" value="bell" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 transition-all group-hover:border-amber-500 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 text-amber-400">
+                                <i class="fa-solid fa-bell text-2xl"></i>
+                            </div>
+                            <span class="text-[9px] text-slate-500 mt-1 block">Sino</span>
+                        </label>
+                        <!-- Presente -->
+                        <label class="cursor-pointer text-center group">
+                            <input type="radio" name="ornamentDesign" value="gift" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 transition-all group-hover:border-blue-500 peer-checked:border-blue-500 peer-checked:bg-blue-500/10 text-blue-400">
+                                <i class="fa-solid fa-gift text-2xl"></i>
+                            </div>
+                            <span class="text-[9px] text-slate-500 mt-1 block">Presente</span>
+                        </label>
+                        <!-- Meia -->
+                        <label class="cursor-pointer text-center group">
+                            <input type="radio" name="ornamentDesign" value="sock" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 transition-all group-hover:border-emerald-500 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 text-emerald-400">
+                                <i class="fa-solid fa-socks text-2xl"></i>
+                            </div>
+                            <span class="text-[9px] text-slate-500 mt-1 block">Meia</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Quem Envia -->
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">2. Seu Nome (Ou apelido)</label>
+                    <input type="text" id="ornamentSender" required placeholder="Ex: Maria Clara, Seu Admirador, Anônimo" 
+                           class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-yellow-500 transition-all text-sm">
+                </div>
+
+                <!-- Recado Secreto -->
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">3. Mensagem Secreta</label>
+                    <textarea id="ornamentMessage" required rows="4" maxlength="300" placeholder="Escreva aqui seu recado, votos de felicidade ou carinho..." 
+                              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-yellow-500 transition-all text-sm resize-none"></textarea>
+                    <p class="text-[10px] text-slate-500 text-right mt-1">Máximo 300 caracteres.</p>
+                </div>
+
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+                    🌟 <strong>Após preencher:</strong> Você será instruído a clicar no local exato da árvore onde quer colocar seu enfeite.
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-slate-950 font-bold py-3 px-4 rounded-xl transition-all shadow-lg text-center flex items-center justify-center gap-2">
+                    Continuar e Escolher Local <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
         </div>
     </div>
 
-    <div id="app-screen" class="hidden flex h-full w-full bg-white overflow-hidden">
-        
-        <aside id="sidebar" class="w-full md:w-80 flex flex-col border-r border-slate-200 bg-white z-50 h-full">
-            <header class="p-4 border-b border-slate-100">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center space-x-3">
-                        <div id="my-avatar" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white font-bold">U</div>
-                        <div>
-                            <p id="my-name" class="font-bold text-slate-800 text-sm">USUÁRIO</p>
-                            <p id="my-id-display" class="text-[10px] text-blue-600 font-black">#000000</p>
-                        </div>
-                    </div>
-                    <button onclick="location.reload()" class="text-slate-400 hover:text-red-500 text-xs font-bold">SAIR</button>
-                </div>
-                <div id="master-panel" class="hidden grid grid-cols-2 gap-2 mb-4">
-                    <button onclick="loadMasterView('users')" class="bg-slate-900 text-white text-[10px] font-bold py-2 rounded-lg">USUÁRIOS</button>
-                    <button onclick="loadMasterView('chats')" class="bg-blue-600 text-white text-[10px] font-bold py-2 rounded-lg">MONITORAR</button>
-                </div>
-                <input type="text" id="search-input" placeholder="Adicionar ID de alguém..." class="w-full px-4 py-3 bg-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500">
-            </header>
-            <div id="list-container" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
-        </aside>
+    <!-- MODAL 2: VER CONTEÚDO DO ENFEITE (MENSAGEM) -->
+    <div id="modalReadMessage" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 relative shadow-2xl space-y-6 animate-in fade-in zoom-in-95 duration-200 text-center">
+            <button class="absolute top-4 right-4 text-slate-500 hover:text-slate-200 text-xl btnCloseModal">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
 
-        <main id="chat-area" class="flex-1 hidden md:flex flex-col bg-slate-50 relative h-full">
-            <div id="welcome-view" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white">
-                <h2 class="text-xl font-bold text-slate-800">Mensagens CLX</h2>
-                <p class="text-slate-400 text-xs mt-2">Escolha uma conversa ou adicione um ID.</p>
+            <!-- Ícone do Enfeite -->
+            <div id="readOrnamentIconWrapper" class="w-20 h-20 mx-auto rounded-full flex items-center justify-center text-4xl mb-2">
+                <i class="fa-solid fa-circle"></i>
             </div>
 
-            <!-- VIEW ATIVA COM SCROLL CORRIGIDO -->
-            <div id="active-chat-view" class="hidden flex-col h-full">
-                <header class="h-16 flex-shrink-0 bg-white border-b border-slate-200 px-4 flex items-center z-10">
-                    <button onclick="closeChat()" class="md:hidden mr-3 p-2 text-slate-500">←</button>
-                    <div id="target-avatar" class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-3">?</div>
-                    <div>
-                        <p id="target-name" class="font-bold text-slate-800 text-sm">NOME</p>
-                        <p class="text-[9px] text-green-500 font-bold">ATIVO AGORA</p>
-                    </div>
-                </header>
-
-                <div id="messages-container">
-                    <!-- Mensagens entram aqui -->
+            <!-- Status do Bloqueio -->
+            <div id="readLockedContent" class="space-y-4">
+                <div class="inline-flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-semibold">
+                    <i class="fa-solid fa-lock"></i> MENSAGEM TRANCADA
                 </div>
-
-                <footer id="input-area">
-                    <div class="flex items-center space-x-2">
-                        <input type="text" id="message-input" placeholder="Digite uma mensagem..." class="flex-1 bg-slate-100 rounded-2xl px-5 py-3.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-blue-500">
-                        <button onclick="sendMessage()" class="p-3.5 bg-blue-600 text-white rounded-2xl shadow-md active:scale-95">
-                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 00.17-1.408l-7-14z" /></svg>
-                        </button>
-                    </div>
-                </footer>
+                <h3 class="serif-title text-xl font-extrabold text-slate-200">De: <span id="readLockedSender">Alguém Especial</span></h3>
+                <p class="text-slate-400 text-sm leading-relaxed px-2">
+                    Esta mensagem secreta foi pendurada com carinho, mas ela só poderá ser revelada quando o cronômetro da árvore for zerado!
+                </p>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                    <p class="text-[10px] text-yellow-400 uppercase tracking-widest font-bold mb-1">Revelação programada:</p>
+                    <p id="readLockedTargetDate" class="font-mono text-slate-200 text-sm font-semibold">Carregando...</p>
+                </div>
             </div>
-        </main>
+
+            <!-- Status Aberto (Conteúdo Revelado) -->
+            <div id="readUnlockedContent" class="space-y-4 hidden">
+                <div class="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold animate-pulse">
+                    <i class="fa-solid fa-lock-open"></i> ENFEITE REVELADO
+                </div>
+                <div class="space-y-1">
+                    <p class="text-xs text-slate-500">Uma mensagem especial de</p>
+                    <h3 class="serif-title text-2xl font-extrabold text-yellow-400" id="readUnlockedSender">Anônimo</h3>
+                </div>
+                
+                <div class="bg-slate-950/80 border border-slate-800 p-6 rounded-2xl relative">
+                    <div class="text-slate-400 text-2xl absolute top-2 left-3 opacity-30"><i class="fa-solid fa-quote-left"></i></div>
+                    <p id="readUnlockedMessage" class="handwritten text-lg text-slate-100 leading-relaxed py-2 break-words">
+                        Mensagem secreta...
+                    </p>
+                    <div class="text-slate-400 text-2xl absolute bottom-2 right-3 opacity-30"><i class="fa-solid fa-quote-right"></i></div>
+                </div>
+                
+                <p id="readUnlockedDate" class="text-[10px] text-slate-600">Enviado em...</p>
+            </div>
+            
+            <button class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 px-4 rounded-xl transition-all btnCloseModal">
+                Fechar Janela
+            </button>
+        </div>
     </div>
 
+    <!-- MODAL 3: PAINEL DE CONTROLE DO CRIADOR (ADMIN) -->
+    <div id="modalAdmin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 relative shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <button class="absolute top-4 right-4 text-slate-500 hover:text-slate-200 text-xl btnCloseModal">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center">
+                <h3 class="serif-title text-xl font-bold text-yellow-400">Painel de Controle</h3>
+                <p class="text-xs text-slate-400 mt-1">Gerencie a data de liberação dos recados.</p>
+            </div>
+
+            <!-- PIN Login State -->
+            <div id="adminPinState" class="space-y-4">
+                <p class="text-xs text-slate-300 text-center">Digite o PIN de 6 dígitos que você cadastrou ao criar esta árvore:</p>
+                <div class="space-y-3">
+                    <input type="password" id="adminPinInput" pattern="[0-9]{6}" maxlength="6" placeholder="******" 
+                           class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center tracking-widest text-lg font-bold text-slate-100 focus:outline-none focus:border-yellow-500 transition-all">
+                    <button id="btnVerifyAdminPin" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold py-3 px-4 rounded-xl transition-all shadow-lg text-center">
+                        Verificar PIN de Acesso
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Logged In State (Gerenciador) -->
+            <div id="adminDashboardState" class="space-y-5 hidden">
+                <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 text-center">
+                    <p class="text-xs text-emerald-400 font-bold flex items-center justify-center gap-1"><i class="fa-solid fa-circle-check"></i> Identidade Confirmada</p>
+                    <p class="text-slate-400 text-[10px] mt-1">Você pode alterar as regras da árvore livremente abaixo.</p>
+                </div>
+
+                <!-- Formulário de Alteração da Data -->
+                <div class="space-y-3">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Nova Data e Hora Limite para Revelação</label>
+                    <input type="datetime-local" id="adminNewDateInput" required
+                           class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-yellow-500 transition-all text-sm">
+                    <p class="text-[10px] text-slate-500">Se você alterar para uma data no passado, todas as mensagens serão reveladas instantaneamente.</p>
+                </div>
+
+                <button id="btnSaveNewDate" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-bold py-3 px-4 rounded-xl transition-all shadow-lg text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Nova Data Limite
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST (NOTIFICAÇÃO RÁPIDA CUSTOMIZADA) -->
+    <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-yellow-500/30 text-slate-100 px-6 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2.5 max-w-sm w-11/12 text-sm justify-between transition-all duration-300 opacity-0 translate-y-10 pointer-events-none">
+        <div class="flex items-center gap-2">
+            <span id="toastIcon" class="text-yellow-400 text-base"><i class="fa-solid fa-bell"></i></span>
+            <span id="toastMsg" class="font-medium text-slate-200 font-semibold">Notificação...</span>
+        </div>
+        <button onclick="hideToast()" class="text-slate-500 hover:text-slate-300 text-base"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- ==================== SCRIPTS E LOGICA ==================== -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, query, where, onSnapshot, addDoc, orderBy, serverTimestamp, getDocs, deleteDoc, limit } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Configuração personalizada do seu Firebase Web App
         const firebaseConfig = {
-            apiKey: "AIzaSyAJcdIIRpqeoG4Y9mA3w8WeRQxKe7JvWjs",
-            authDomain: "site-de-mensagem-bda62.firebaseapp.com",
-            projectId: "site-de-mensagem-bda62",
-            storageBucket: "site-de-mensagem-bda62.firebasestorage.app",
-            messagingSenderId: "264723387686",
-            appId: "1:264723387686:web:6d60439df5f0edf66a1de7"
+            apiKey: "AIzaSyA7sjqWxLJR1EwqrZKE4RvgINAtfWv0m9U",
+            authDomain: "arvore-recados.firebaseapp.com",
+            projectId: "arvore-recados",
+            storageBucket: "arvore-recados.firebasestorage.app",
+            messagingSenderId: "675694126478",
+            appId: "1:675694126478:web:2f20635983ad791764f0df"
         };
 
+        // Inicializando os serviços do Firebase
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
+        const appId = 'arvore-recados';
 
+        // State variables
         let currentUser = null;
-        let activeChatId = null;
-        let isSignUp = false;
-        let unsubMessages = null;
-        let unsubRooms = null;
+        let currentTreeId = null;
+        let currentTreeData = null;
+        let ornamentsList = [];
+        let isPlacementActive = false;
 
-        window.toggleAuthMode = () => {
-            isSignUp = !isSignUp;
-            document.getElementById('email-container').classList.toggle('hidden', !isSignUp);
-            document.getElementById('btn-auth').innerText = isSignUp ? 'Criar minha conta' : 'Entrar';
-            document.getElementById('toggle-mode').innerText = isSignUp ? 'Já tem conta? Entrar' : 'Não tem conta? Criar conta';
+        // Dom Elements
+        const loadingScreen = document.getElementById('loadingScreen');
+        const homeScreen = document.getElementById('homeScreen');
+        const treeScreen = document.getElementById('treeScreen');
+        
+        // Form & input elements
+        const createTreeForm = document.getElementById('createTreeForm');
+        const treeOwnerName = document.getElementById('treeOwnerName');
+        const treeRevealDate = document.getElementById('treeRevealDate');
+        const treeAdminPin = document.getElementById('treeAdminPin');
+        
+        // Modals
+        const modalOrnament = document.getElementById('modalOrnament');
+        const modalReadMessage = document.getElementById('modalReadMessage');
+        const modalAdmin = document.getElementById('modalAdmin');
+        const toastNotification = document.getElementById('toastNotification');
+
+        // Setup base path according to STRICT RULE 1
+        const getTreesCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'trees');
+        const getOrnamentsCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'ornaments');
+
+        // ==================== AUTH & ROUTING ====================
+        
+        window.onload = async () => {
+            // Start Snow Animation
+            initSnow();
+
+            // Authentication Step with absolute fallback
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (tokenError) {
+                        console.warn("Token customizado falhou (conflito de projeto), usando autenticação anônima como fallback:", tokenError);
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                showToast("Erro ao conectar à rede mágica. Tente atualizar a página.", "fa-solid fa-triangle-exclamation");
+            }
+
+            // Track Auth state change
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    // Check URL for Tree ID routing
+                    routeView();
+                }
+            });
         };
 
-        window.handleAuth = async () => {
-            const userRaw = document.getElementById('login-user').value.trim();
-            const user = userRaw.toLowerCase();
-            const pass = document.getElementById('login-pass').value.trim();
-            const email = document.getElementById('login-email').value.trim();
-            const errorEl = document.getElementById('login-error');
+        // Determine which screen/tree is loaded based on query params
+        function routeView() {
+            const params = new URLSearchParams(window.location.search);
+            const treeId = params.get('tree');
 
-            if (!user || !pass) return;
+            if (treeId && treeId.trim() !== "") {
+                currentTreeId = treeId;
+                loadTree(treeId);
+            } else {
+                // EXCLUSIVO: Se o usuário não tem o link no parâmetro, exibe apenas a tela de CRIAÇÃO da árvore!
+                loadingScreen.classList.add('hidden');
+                homeScreen.classList.remove('hidden');
+                treeScreen.classList.add('hidden');
+            }
+        }
+
+        // ==================== FIREBASE DATA FETCH ====================
+
+        async function loadTree(treeId) {
+            if (!currentUser) return;
+            
+            try {
+                // Fetch Tree Header Details (STRICT RULE 2 - Keep it simple)
+                const treeDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'trees', treeId);
+                const treeDocSnap = await getDoc(treeDocRef);
+
+                if (!treeDocSnap.exists()) {
+                    // Se o link da URL for inválido, exibe um feedback e manda o usuário para a tela de criação
+                    showToast("Árvore não encontrada! Redirecionando para criação...", "fa-solid fa-triangle-exclamation");
+                    setTimeout(() => {
+                        window.location.href = window.location.pathname; // limpa a URL e redireciona para a criação
+                    }, 2500);
+                    return;
+                }
+
+                currentTreeData = treeDocSnap.data();
+                renderTreeHeaderAndTheme(currentTreeData);
+
+                // Setup realtime listener for ornaments of this specific tree
+                // Rule 2: Fetch all matching tree ornaments, then filter in memory
+                const ornamentsRef = getOrnamentsCollection();
+                
+                onSnapshot(ornamentsRef, (snapshot) => {
+                    const allOrnaments = [];
+                    snapshot.forEach(doc => {
+                        allOrnaments.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    // In-memory filter for current tree ID
+                    ornamentsList = allOrnaments.filter(o => o.treeId === currentTreeId);
+                    renderOrnamentsOnTree(ornamentsList);
+                }, (error) => {
+                    console.error("Error fetching ornaments:", error);
+                });
+
+                // Listen in real-time to tree configurations (in case owner updates the limit date!)
+                onSnapshot(treeDocRef, (snap) => {
+                    if (snap.exists()) {
+                        currentTreeData = snap.data();
+                        updateCountdown();
+                    }
+                });
+
+                // Start Live Countdown Thread
+                setInterval(updateCountdown, 1000);
+
+                // Switch UI Screens (Exibe a árvore pois o ID é válido)
+                loadingScreen.classList.add('hidden');
+                homeScreen.classList.add('hidden');
+                treeScreen.classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Error loading tree:", err);
+                showToast("Falha técnica ao carregar árvore.", "fa-solid fa-circle-exclamation");
+            }
+        }
+
+        // ==================== TREE CREATION ====================
+
+        createTreeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const name = treeOwnerName.value.trim();
+            const revealStr = treeRevealDate.value;
+            const pin = treeAdminPin.value;
+            const theme = document.querySelector('input[name="treeTheme"]:checked').value;
+
+            if (!name || !revealStr || !pin || pin.length !== 6) {
+                showToast("Preencha todos os campos corretamente (PIN com 6 dígitos).", "fa-solid fa-circle-exclamation");
+                return;
+            }
+
+            // Create unique alphanumeric ID
+            const newTreeId = Math.random().toString(36).substring(2, 10);
+            
+            // ISO date representation
+            const revealDateMs = new Date(revealStr).getTime();
+
+            const newTreeData = {
+                id: newTreeId,
+                name: name,
+                creatorId: currentUser.uid,
+                adminPin: pin,
+                revealDate: revealDateMs,
+                theme: theme,
+                createdAt: Date.now()
+            };
 
             try {
-                if (isSignUp) {
-                    const userDoc = await getDoc(doc(db, "clx_users", user));
-                    if (userDoc.exists()) { errorEl.innerText = "Usuário já existe!"; errorEl.classList.remove('hidden'); return; }
-                    const randomId = Math.floor(100000 + Math.random() * 900000).toString();
-                    const userData = { login: userRaw, pass, email, id: randomId };
-                    await setDoc(doc(db, "clx_users", user), userData);
-                    loginSuccess(userData);
-                } else {
-                    if (user === 'clx' && pass === '02072007') {
-                        loginSuccess({ login: 'CLX', id: 'MASTER', isMaster: true });
-                        return;
-                    }
-                    const userDoc = await getDoc(doc(db, "clx_users", user));
-                    if (userDoc.exists() && userDoc.data().pass === pass) loginSuccess(userDoc.data());
-                    else { errorEl.innerText = "Dados incorretos!"; errorEl.classList.remove('hidden'); }
-                }
-            } catch (e) { console.error(e); }
-        };
+                // Strict Path Write for Tree Definition
+                const treeDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'trees', newTreeId);
+                await setDoc(treeDocRef, newTreeData);
 
-        function loginSuccess(userData) {
-            currentUser = userData;
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('my-name').innerText = (currentUser.login || "USUÁRIO").toUpperCase();
-            document.getElementById('my-id-display').innerText = `#${currentUser.id}`;
-            document.getElementById('my-avatar').innerText = (currentUser.login?.[0] || "U").toUpperCase();
-            if (currentUser.isMaster) document.getElementById('master-panel').classList.remove('hidden');
-            loadRecentConversations();
-        }
-
-        function loadRecentConversations() {
-            if (unsubRooms) unsubRooms();
-            unsubRooms = onSnapshot(collection(db, "clx_rooms"), (snapshot) => {
-                const list = document.getElementById('list-container');
-                if (list.getAttribute('data-view') === 'master-users') return;
-                list.innerHTML = "";
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (currentUser && (data.pIds.includes(currentUser.id) || currentUser.isMaster)) {
-                        const otherIdx = data.pNames.findIndex(n => n.toLowerCase() !== (currentUser.login || "").toLowerCase());
-                        const otherName = otherIdx !== -1 ? data.pNames[otherIdx] : "Conversa";
-                        const div = document.createElement('div');
-                        div.className = `flex items-center p-3 rounded-xl cursor-pointer hover:bg-slate-50 transition ${activeChatId === docSnap.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''}`;
-                        div.onclick = () => selectChat(otherName, docSnap.id);
-                        div.innerHTML = `<div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">${otherName[0].toUpperCase()}</div><div class="ml-3"><p class="text-xs font-bold text-slate-800">${otherName}</p></div>`;
-                        list.appendChild(div);
-                    }
-                });
-            });
-        }
-
-        async function selectChat(name, chatId) {
-            activeChatId = chatId;
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('hidden');
-                document.getElementById('chat-area').classList.remove('hidden');
-                document.getElementById('chat-area').classList.add('flex');
-            }
-            document.getElementById('welcome-view').classList.add('hidden');
-            document.getElementById('active-chat-view').classList.remove('hidden');
-            document.getElementById('active-chat-view').classList.add('flex');
-            document.getElementById('target-name').innerText = name;
-            document.getElementById('target-avatar').innerText = name[0].toUpperCase();
-            startListeningMessages();
-        }
-
-        function startListeningMessages() {
-            if (unsubMessages) unsubMessages();
-            const q = query(collection(db, "clx_chats", activeChatId, "messages"), orderBy("timestamp", "asc"));
-            unsubMessages = onSnapshot(q, (snapshot) => {
-                const container = document.getElementById('messages-container');
-                container.innerHTML = "";
-                const now = Date.now();
-                const dayMs = 24 * 60 * 60 * 1000;
-
-                snapshot.forEach(async (mDoc) => {
-                    const m = mDoc.data();
-                    if (m.timestamp && (now - m.timestamp.toMillis() > dayMs)) {
-                        await deleteDoc(doc(db, "clx_chats", activeChatId, "messages", mDoc.id));
-                        return;
-                    }
-                    const isMine = m.sId === currentUser.id;
-                    const div = document.createElement('div');
-                    div.className = `flex w-full ${isMine ? 'justify-end' : 'justify-start'} animate-msg`;
-                    div.innerHTML = `<div class="max-w-[80%] p-3 ${isMine ? 'msg-self' : 'msg-other'}"><p class="text-[13px]">${m.txt}</p></div>`;
-                    container.appendChild(div);
-                });
+                showToast("Sua Árvore Mágica foi gerada com sucesso!", "fa-solid fa-wand-magic-sparkles");
                 
-                // AUTO-SCROLL GARANTIDO
-                setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
-            });
-        }
+                // Redirect user to the tree address
+                setTimeout(() => {
+                    window.location.search = `?tree=${newTreeId}`;
+                }, 1500);
 
-        window.sendMessage = async () => {
-            const input = document.getElementById('message-input');
-            const txt = input.value.trim();
-            if (!txt || !activeChatId) return;
-            await addDoc(collection(db, "clx_chats", activeChatId, "messages"), {
-                txt, sId: currentUser.id, timestamp: serverTimestamp()
-            });
-            input.value = "";
-            input.focus();
-        };
-
-        document.getElementById('search-input').addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const id = e.target.value.trim();
-                const q = query(collection(db, "clx_users"), where("id", "==", id), limit(1));
-                const snap = await getDocs(q);
-                if (!snap.empty) {
-                    const other = snap.docs[0].data();
-                    const chatId = [currentUser.id, other.id].sort().join('_');
-                    await setDoc(doc(db, "clx_rooms", chatId), {
-                        pIds: [currentUser.id, other.id],
-                        pNames: [currentUser.login, other.login]
-                    }, { merge: true });
-                    selectChat(other.login, chatId);
-                    e.target.value = "";
-                }
+            } catch (err) {
+                console.error("Write error:", err);
+                showToast("Erro ao salvar árvore no banco de dados.", "fa-solid fa-triangle-exclamation");
             }
         });
 
-        window.loadMasterView = async (mode) => {
-            const list = document.getElementById('list-container');
-            if (mode === 'users') {
-                list.setAttribute('data-view', 'master-users');
-                const snap = await getDocs(collection(db, "clx_users"));
-                list.innerHTML = "<div class='text-[10px] font-bold p-2 text-slate-400'>TODOS OS USUÁRIOS</div>";
-                snap.forEach(uDoc => {
-                    const u = uDoc.data();
-                    const div = document.createElement('div');
-                    div.className = "p-3 border-b border-slate-50";
-                    div.innerHTML = `<p class='text-xs font-bold'>${(u.login || "S/N").toUpperCase()}</p><p class='text-[10px] text-blue-600'>ID: #${u.id}</p>`;
-                    list.appendChild(div);
-                });
-            } else {
-                list.setAttribute('data-view', 'chats');
-                loadRecentConversations();
+        // ==================== RENDERING & THEMES ====================
+
+        function renderTreeHeaderAndTheme(tree) {
+            document.getElementById('displayTreeName').innerText = `Árvore de ${tree.name}`;
+            
+            // Hide all SVG elements
+            document.getElementById('svgChristmas').classList.add('hidden');
+            document.getElementById('svgEnchanted').classList.add('hidden');
+            document.getElementById('svgGolden').classList.add('hidden');
+
+            // Ambient background controls
+            const glow = document.getElementById('themeLightGlow');
+
+            if (tree.theme === 'christmas') {
+                document.getElementById('svgChristmas').classList.remove('hidden');
+                glow.className = "absolute w-72 h-72 rounded-full bg-emerald-500/15 blur-[90px] -z-10 top-1/4";
+            } else if (tree.theme === 'enchanted') {
+                document.getElementById('svgEnchanted').classList.remove('hidden');
+                glow.className = "absolute w-72 h-72 rounded-full bg-purple-500/15 blur-[90px] -z-10 top-1/4";
+            } else if (tree.theme === 'golden') {
+                document.getElementById('svgGolden').classList.remove('hidden');
+                glow.className = "absolute w-72 h-72 rounded-full bg-amber-500/15 blur-[90px] -z-10 top-1/4";
             }
+        }
+
+        // Renders visual ornaments absolutely inside the tree wrapper based on percentages
+        function renderOrnamentsOnTree(ornaments) {
+            const wrapper = document.getElementById('ornamentsWrapper');
+            wrapper.innerHTML = '';
+
+            ornaments.forEach(item => {
+                const button = document.createElement('button');
+                button.className = "absolute ornament-placed flex items-center justify-center rounded-full transition-all focus:outline-none";
+                button.style.left = `${item.position.x}%`;
+                button.style.top = `${item.position.y}%`;
+                button.style.transform = 'translate(-50%, -50%)';
+                button.style.width = '32px';
+                button.style.height = '32px';
+                button.style.zIndex = '30';
+
+                // Specific ornament icon & colors
+                let iconClass = 'fa-solid ';
+                let bgGradient = '';
+                let borderTheme = '';
+
+                switch (item.ornamentType) {
+                    case 'ball':
+                        iconClass += 'fa-circle';
+                        bgGradient = 'from-red-500 to-rose-700';
+                        borderTheme = 'border-red-400';
+                        break;
+                    case 'star':
+                        iconClass += 'fa-star text-[10px]';
+                        bgGradient = 'from-yellow-400 to-amber-600 text-yellow-950';
+                        borderTheme = 'border-yellow-200';
+                        break;
+                    case 'bell':
+                        iconClass += 'fa-bell text-xs';
+                        bgGradient = 'from-amber-400 to-orange-500';
+                        borderTheme = 'border-amber-300';
+                        break;
+                    case 'gift':
+                        iconClass += 'fa-gift text-xs';
+                        bgGradient = 'from-blue-500 to-sky-600';
+                        borderTheme = 'border-blue-300';
+                        break;
+                    case 'sock':
+                        iconClass += 'fa-socks text-xs';
+                        bgGradient = 'from-emerald-500 to-green-600';
+                        borderTheme = 'border-emerald-300';
+                        break;
+                    default:
+                        iconClass += 'fa-heart';
+                        bgGradient = 'from-pink-500 to-rose-600';
+                        borderTheme = 'border-pink-300';
+                }
+
+                button.innerHTML = `<span class="bg-gradient-to-b ${bgGradient} border ${borderTheme} rounded-full w-7 h-7 flex items-center justify-center text-[10px] text-white shadow-md"><i class="${iconClass}"></i></span>`;
+                
+                // Add click listener to open the message
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation(); // prevent tree container click action
+                    openOrnamentMessage(item);
+                });
+
+                wrapper.appendChild(button);
+            });
+        }
+
+        // ==================== TIMER LOGIC ====================
+
+        function isRevealed() {
+            if (!currentTreeData) return false;
+            return Date.now() >= currentTreeData.revealDate;
+        }
+
+        function updateCountdown() {
+            if (!currentTreeData) return;
+
+            const now = Date.now();
+            const difference = currentTreeData.revealDate - now;
+
+            const countdownLabel = document.getElementById('countdownLabel');
+            const countdownTimer = document.getElementById('countdownTimer');
+            const revealedStatusBanner = document.getElementById('revealedStatusBanner');
+
+            if (difference <= 0) {
+                // Time's up! Unlocked state
+                countdownLabel.classList.add('hidden');
+                countdownTimer.classList.add('hidden');
+                revealedStatusBanner.classList.remove('hidden');
+            } else {
+                // Locked State
+                countdownLabel.classList.remove('hidden');
+                countdownTimer.classList.remove('hidden');
+                revealedStatusBanner.classList.add('hidden');
+
+                // Compute time segments
+                const d = Math.floor(difference / (1000 * 60 * 60 * 24));
+                const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((difference % (1000 * 60)) / 1000);
+
+                // Update text values
+                document.getElementById('daysVal').innerText = String(d).padStart(2, '0');
+                document.getElementById('hoursVal').innerText = String(h).padStart(2, '0');
+                document.getElementById('minsVal').innerText = String(m).padStart(2, '0');
+                document.getElementById('secsVal').innerText = String(s).padStart(2, '0');
+            }
+        }
+
+        // ==================== INTERACTION: PLACE ORNAMENT ====================
+
+        // Trigger step 1: Open form modal to pick style, sender and write note
+        document.getElementById('btnPrepareOrnament').addEventListener('click', () => {
+            modalOrnament.classList.remove('hidden');
+            modalOrnament.classList.add('flex');
+        });
+
+        // Form submission inside modal: stores inputs & transitions to "Tree Positioning Mode"
+        document.getElementById('ornamentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Check form details are valid
+            const sender = document.getElementById('ornamentSender').value.trim();
+            const text = document.getElementById('ornamentMessage').value.trim();
+
+            if (!sender || !text) {
+                showToast("Preencha todos os campos do enfeite.", "fa-solid fa-triangle-exclamation");
+                return;
+            }
+
+            // Hide the config modal
+            closeAllModals();
+
+            // Set state to active positioning
+            isPlacementActive = true;
+            document.getElementById('clickPlacementInstructions').classList.remove('hidden');
+            
+            // Pulse highlight effect on tree container to let user know they must click
+            const treeContainer = document.getElementById('treeContainer');
+            treeContainer.classList.add('ring-4', 'ring-yellow-500/50');
+            
+            showToast("Agora, toque/clique no local desejado na árvore!", "fa-solid fa-arrow-pointer");
+        });
+
+        // Click handler on actual Tree physical canvas bounds
+        document.getElementById('treeContainer').addEventListener('click', async (e) => {
+            if (!isPlacementActive) return;
+
+            // Get exact bounding coordinates of clicking point inside parent tree
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xVal = ((e.clientX - rect.left) / rect.width) * 100;
+            const yVal = ((e.clientY - rect.top) / rect.height) * 100;
+
+            // Simple safety constraints so coordinates don't map outside visible zones
+            const boundedX = Math.min(Math.max(xVal, 5), 95);
+            const boundedY = Math.min(Math.max(yVal, 10), 90);
+
+            // Complete save workflow
+            isPlacementActive = false;
+            
+            // Cleanup UI indicators
+            document.getElementById('clickPlacementInstructions').classList.add('hidden');
+            document.getElementById('treeContainer').classList.remove('ring-4', 'ring-yellow-500/50');
+
+            const design = document.querySelector('input[name="ornamentDesign"]:checked').value;
+            const sender = document.getElementById('ornamentSender').value.trim();
+            const text = document.getElementById('ornamentMessage').value.trim();
+
+            const newOrnamentObj = {
+                treeId: currentTreeId,
+                ornamentType: design,
+                senderName: sender,
+                message: text,
+                position: { x: parseFloat(boundedX.toFixed(2)), y: parseFloat(boundedY.toFixed(2)) },
+                createdAt: Date.now()
+            };
+
+            try {
+                // Save directly to public collections with exact path constraints (STRICT RULE 1)
+                await addDoc(getOrnamentsCollection(), newOrnamentObj);
+                
+                showToast("Seu enfeite foi pendurado com carinho!", "fa-solid fa-circle-check");
+                
+                // Clear the form fields for next time
+                document.getElementById('ornamentForm').reset();
+
+            } catch (err) {
+                console.error("Save Ornament Error:", err);
+                showToast("Erro ao gravar enfeite. Tente novamente.", "fa-solid fa-triangle-exclamation");
+            }
+        });
+
+        // ==================== INTERACTION: READ ORNAMENT ====================
+
+        function openOrnamentMessage(item) {
+            const iconWrapper = document.getElementById('readOrnamentIconWrapper');
+            const lockedState = document.getElementById('readLockedContent');
+            const unlockedState = document.getElementById('readUnlockedContent');
+
+            // Format appropriate visual theme for dynamic icon modal header
+            let iconMarkup = '';
+            let bgGlow = '';
+
+            switch (item.ornamentType) {
+                case 'ball':
+                    iconMarkup = '<i class="fa-solid fa-circle text-red-500"></i>';
+                    bgGlow = 'bg-red-500/10 border border-red-500/20';
+                    break;
+                case 'star':
+                    iconMarkup = '<i class="fa-solid fa-star text-yellow-400"></i>';
+                    bgGlow = 'bg-yellow-500/10 border border-yellow-500/20';
+                    break;
+                case 'bell':
+                    iconMarkup = '<i class="fa-solid fa-bell text-amber-400"></i>';
+                    bgGlow = 'bg-amber-500/10 border border-amber-500/20';
+                    break;
+                case 'gift':
+                    iconMarkup = '<i class="fa-solid fa-gift text-blue-400"></i>';
+                    bgGlow = 'bg-blue-500/10 border border-blue-500/20';
+                    break;
+                case 'sock':
+                    iconMarkup = '<i class="fa-solid fa-socks text-emerald-400"></i>';
+                    bgGlow = 'bg-emerald-500/10 border border-emerald-500/20';
+                    break;
+            }
+
+            iconWrapper.className = `w-20 h-20 mx-auto rounded-full flex items-center justify-center text-4xl mb-2 ${bgGlow}`;
+            iconWrapper.innerHTML = iconMarkup;
+
+            // Check if unlocking date criteria is passed
+            if (isRevealed()) {
+                // UNLOCKED VIEW
+                lockedState.classList.add('hidden');
+                unlockedState.classList.remove('hidden');
+
+                document.getElementById('readUnlockedSender').innerText = item.senderName;
+                document.getElementById('readUnlockedMessage').innerText = item.message;
+                
+                // Pretty date printing
+                const dateObj = new Date(item.createdAt);
+                const formatOpts = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+                document.getElementById('readUnlockedDate').innerText = `Enviado em ${dateObj.toLocaleString('pt-BR', formatOpts)}`;
+
+            } else {
+                // LOCKED VIEW
+                unlockedState.classList.add('hidden');
+                lockedState.classList.remove('hidden');
+
+                document.getElementById('readLockedSender').innerText = item.senderName;
+
+                const targetDate = new Date(currentTreeData.revealDate);
+                document.getElementById('readLockedTargetDate').innerText = targetDate.toLocaleString('pt-BR');
+            }
+
+            modalReadMessage.classList.remove('hidden');
+            modalReadMessage.classList.add('flex');
+        }
+
+        // ==================== INTERACTION: ADMIN PANEL ====================
+
+        document.getElementById('btnOpenAdminPanel').addEventListener('click', () => {
+            // Reset state inside Modal Admin before opening
+            document.getElementById('adminPinState').classList.remove('hidden');
+            document.getElementById('adminDashboardState').classList.add('hidden');
+            document.getElementById('adminPinInput').value = '';
+            
+            modalAdmin.classList.remove('hidden');
+            modalAdmin.classList.add('flex');
+        });
+
+        // PIN validation code
+        document.getElementById('btnVerifyAdminPin').addEventListener('click', () => {
+            const inputVal = document.getElementById('adminPinInput').value;
+
+            if (!currentTreeData) return;
+
+            if (inputVal === currentTreeData.adminPin) {
+                // Login successful inside panel
+                document.getElementById('adminPinState').classList.add('hidden');
+                document.getElementById('adminDashboardState').classList.remove('hidden');
+
+                // Prepopulate current lock date time
+                const formatLocalDate = (ms) => {
+                    const date = new Date(ms);
+                    const pad = (n) => String(n).padStart(2, '0');
+                    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+                };
+                document.getElementById('adminNewDateInput').value = formatLocalDate(currentTreeData.revealDate);
+
+            } else {
+                showToast("PIN incorreto! Verifique seu código.", "fa-solid fa-circle-xmark");
+            }
+        });
+
+        // Save updated reveal date handler
+        document.getElementById('btnSaveNewDate').addEventListener('click', async () => {
+            const newDateStr = document.getElementById('adminNewDateInput').value;
+
+            if (!newDateStr) {
+                showToast("Selecione uma data válida.", "fa-solid fa-triangle-exclamation");
+                return;
+            }
+
+            const newDateMs = new Date(newDateStr).getTime();
+
+            try {
+                // Update specific doc in Firestore
+                const treeDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'trees', currentTreeId);
+                await updateDoc(treeDocRef, { revealDate: newDateMs });
+
+                showToast("Data limite atualizada com sucesso!", "fa-solid fa-circle-check");
+                closeAllModals();
+
+            } catch (err) {
+                console.error("Error updating reveal date:", err);
+                showToast("Erro ao tentar atualizar a data no sistema.", "fa-solid fa-triangle-exclamation");
+            }
+        });
+
+        // ==================== CLIPBOARD & SHARE WORKFLOW ====================
+
+        document.getElementById('btnShareTree').addEventListener('click', () => {
+            const pathLink = window.location.href;
+            
+            // Clipboard fallback implementation as mandated in system instructions
+            const inputTemp = document.createElement('input');
+            inputTemp.value = pathLink;
+            document.body.appendChild(inputTemp);
+            inputTemp.select();
+            document.execCommand('copy');
+            document.body.removeChild(inputTemp);
+
+            showToast("Link copiado! Compartilhe com quem quiser.", "fa-solid fa-clipboard-check");
+        });
+
+        // ==================== UTILS AND HELPER PLUGINS ====================
+
+        // Close action handlers on modal triggers
+        document.querySelectorAll('.btnCloseModal').forEach(btn => {
+            btn.addEventListener('click', closeAllModals);
+        });
+
+        function closeAllModals() {
+            modalOrnament.classList.add('hidden');
+            modalOrnament.classList.remove('flex');
+            modalReadMessage.classList.add('hidden');
+            modalReadMessage.classList.remove('flex');
+            modalAdmin.classList.add('hidden');
+            modalAdmin.classList.remove('flex');
+        }
+
+        // Custom beautiful and non-blocking notification Toasts
+        let toastTimeout = null;
+        function showToast(message, iconName = "fa-solid fa-bell") {
+            const toast = document.getElementById('toastNotification');
+            const msgSpan = document.getElementById('toastMsg');
+            const iconSpan = document.getElementById('toastIcon');
+
+            msgSpan.innerText = message;
+            iconSpan.innerHTML = `<i class="${iconName}"></i>`;
+
+            toast.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(hideToast, 4000);
+        }
+
+        window.hideToast = function hideToast() {
+            const toast = document.getElementById('toastNotification');
+            toast.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+            toast.classList.remove('opacity-100', 'translate-y-0');
         };
 
-        window.closeChat = () => {
-            document.getElementById('sidebar').classList.remove('hidden');
-            document.getElementById('chat-area').classList.add('hidden');
-            activeChatId = null;
-        };
+        // Falling Snow Animation logic using HTML5 Canvas
+        function initSnow() {
+            const canvas = document.getElementById('snowCanvas');
+            const ctx = canvas.getContext('2d');
 
-        document.getElementById('message-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+
+            const particles = [];
+            const maxParticles = 55;
+
+            for (let i = 0; i < maxParticles; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    r: Math.random() * 2.5 + 0.5,
+                    d: Math.random() * maxParticles,
+                    speed: Math.random() * 0.6 + 0.2
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+                ctx.beginPath();
+                for (let i = 0; i < maxParticles; i++) {
+                    const p = particles[i];
+                    ctx.moveTo(p.x, p.y);
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
+                }
+                ctx.fill();
+                update();
+            }
+
+            function update() {
+                for (let i = 0; i < maxParticles; i++) {
+                    const p = particles[i];
+                    p.y += p.speed;
+                    p.x += Math.sin(p.d) * 0.2;
+
+                    if (p.y > height) {
+                        particles[i] = {
+                            x: Math.random() * width,
+                            y: -10,
+                            r: p.r,
+                            d: p.d,
+                            speed: p.speed
+                        };
+                    }
+                }
+            }
+
+            function loop() {
+                draw();
+                requestAnimationFrame(loop);
+            }
+
+            window.addEventListener('resize', () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+            });
+
+            loop();
+        }
     </script>
 </body>
 </html>
