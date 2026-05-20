@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -165,6 +166,29 @@
                             <input type="password" id="treeAdminPin" pattern="[0-9]{6}" required maxlength="6" placeholder="Ex: 123456" 
                                    class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 tracking-widest text-center transition-all">
                             <p class="text-[10px] text-slate-400 mt-1.5">Guarde este PIN para alterar o visual ou a data limite depois!</p>
+                        </div>
+                    </div>
+
+                    <!-- Visibilidade Inicial dos Recados -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Visibilidade dos Recados</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Opção Oculta -->
+                            <label class="cursor-pointer group block">
+                                <input type="radio" name="treeVisibility" value="locked" checked class="peer hidden">
+                                <div class="bg-slate-900/60 border-2 border-slate-800 rounded-2xl p-4 transition-all group-hover:border-yellow-600 peer-checked:border-yellow-500 peer-checked:bg-yellow-950/20">
+                                    <h3 class="font-bold text-slate-200 text-sm">🔒 Ocultar até a data limite</h3>
+                                    <p class="text-xs text-slate-500 mt-1">Os segredos e carinhos ficam ocultos até o cronômetro zerar na data selecionada.</p>
+                                </div>
+                            </label>
+                            <!-- Opção Visível -->
+                            <label class="cursor-pointer group block">
+                                <input type="radio" name="treeVisibility" value="unlocked" class="peer hidden">
+                                <div class="bg-slate-900/60 border-2 border-slate-800 rounded-2xl p-4 transition-all group-hover:border-yellow-600 peer-checked:border-yellow-500 peer-checked:bg-yellow-950/20">
+                                    <h3 class="font-bold text-slate-200 text-sm">🔓 Sempre Visíveis (Mural Aberto)</h3>
+                                    <p class="text-xs text-slate-500 mt-1">Qualquer visitante pode abrir e ler todas as mensagens penduradas a qualquer hora.</p>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
@@ -490,7 +514,7 @@
         </div>
     </div>
 
-    <!-- MODAL 3: PAINEL DE CONTROLE DO CRIADOR (ADMIN) - ATUALIZADO COM SELETOR DE TEMAS -->
+    <!-- MODAL 3: PAINEL DE CONTROLE DO CRIADOR (ADMIN) -->
     <div id="modalAdmin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md items-center justify-center p-4 z-50 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 relative shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
             <button class="absolute top-4 right-4 text-slate-500 hover:text-slate-200 text-xl btnCloseModal">
@@ -555,6 +579,25 @@
                             <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center transition-all hover:border-yellow-600 peer-checked:border-yellow-500 peer-checked:bg-yellow-950/20">
                                 <span class="text-yellow-400 block text-lg mb-1"><i class="fa-solid fa-crown"></i></span>
                                 <h4 class="font-bold text-slate-300 text-[10px]">Estelar</h4>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Alteração de Privacidade/Visibilidade -->
+                <div class="space-y-2">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Visibilidade dos Recados</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer group block">
+                            <input type="radio" name="adminTreeVisibility" value="locked" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center transition-all hover:border-yellow-600 peer-checked:border-yellow-500 peer-checked:bg-yellow-950/20 text-xs font-semibold">
+                                🔒 Ocultar até a data
+                            </div>
+                        </label>
+                        <label class="cursor-pointer group block">
+                            <input type="radio" name="adminTreeVisibility" value="unlocked" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center transition-all hover:border-yellow-600 peer-checked:border-yellow-500 peer-checked:bg-yellow-950/20 text-xs font-semibold">
+                                🔓 Sempre Visíveis
                             </div>
                         </label>
                     </div>
@@ -741,6 +784,7 @@
             const revealStr = treeRevealDate.value;
             const pin = treeAdminPin.value;
             const theme = document.querySelector('input[name="treeTheme"]:checked').value;
+            const revealMode = document.querySelector('input[name="treeVisibility"]:checked').value;
 
             if (!name || !revealStr || !pin || pin.length !== 6) {
                 showToast("Preencha todos os campos corretamente (PIN com 6 dígitos).", "fa-solid fa-circle-exclamation");
@@ -758,6 +802,7 @@
                 adminPin: pin,
                 revealDate: revealDateMs,
                 theme: theme,
+                revealMode: revealMode,
                 createdAt: Date.now()
             };
 
@@ -867,6 +912,10 @@
 
         function isRevealed() {
             if (!currentTreeData) return false;
+            // Se o modo de visibilidade for definido como sempre visível, ignora o prazo limite
+            if (currentTreeData.revealMode === 'unlocked') {
+                return true;
+            }
             return Date.now() >= currentTreeData.revealDate;
         }
 
@@ -880,10 +929,17 @@
             const countdownTimer = document.getElementById('countdownTimer');
             const revealedStatusBanner = document.getElementById('revealedStatusBanner');
 
-            if (difference <= 0) {
+            if (isRevealed()) {
                 countdownLabel.classList.add('hidden');
                 countdownTimer.classList.add('hidden');
                 revealedStatusBanner.classList.remove('hidden');
+                
+                // Exibe label diferente caso seja um mural permanentemente aberto
+                if (currentTreeData.revealMode === 'unlocked') {
+                    revealedStatusBanner.innerHTML = '<i class="fa-solid fa-lock-open"></i> MURAL DE RECADOS ABERTO!';
+                } else {
+                    revealedStatusBanner.innerHTML = '<i class="fa-solid fa-lock-open"></i> MENSAGENS REVELADAS!';
+                }
             } else {
                 countdownLabel.classList.remove('hidden');
                 countdownTimer.classList.remove('hidden');
@@ -930,18 +986,23 @@
             showToast("Agora, toque/clique no local desejado na árvore!", "fa-solid fa-arrow-pointer");
         });
 
+        // Click handler on actual Tree physical canvas bounds
         document.getElementById('treeContainer').addEventListener('click', async (e) => {
             if (!isPlacementActive) return;
 
+            // Get exact bounding coordinates of clicking point inside parent tree
             const rect = e.currentTarget.getBoundingClientRect();
             const xVal = ((e.clientX - rect.left) / rect.width) * 100;
             const yVal = ((e.clientY - rect.top) / rect.height) * 100;
 
+            // Simple safety constraints so coordinates don't map outside visible zones
             const boundedX = Math.min(Math.max(xVal, 5), 95);
             const boundedY = Math.min(Math.max(yVal, 10), 90);
 
+            // Complete save workflow
             isPlacementActive = false;
             
+            // Cleanup UI indicators
             document.getElementById('clickPlacementInstructions').classList.add('hidden');
             document.getElementById('treeContainer').classList.remove('ring-4', 'ring-yellow-500/50');
 
@@ -959,9 +1020,14 @@
             };
 
             try {
+                // Save directly to public collections with exact path constraints (STRICT RULE 1)
                 await addDoc(getOrnamentsCollection(), newOrnamentObj);
+                
                 showToast("Seu enfeite foi pendurado com carinho!", "fa-solid fa-circle-check");
+                
+                // Clear the form fields for next time
                 document.getElementById('ornamentForm').reset();
+
             } catch (err) {
                 console.error("Save Ornament Error:", err);
                 showToast("Erro ao gravar enfeite. Tente novamente.", "fa-solid fa-triangle-exclamation");
@@ -1028,7 +1094,6 @@
             modalReadMessage.classList.add('flex');
         }
 
-        // ==================== STREAMING_CHUNK: Lógica do Painel de Administração... ====================
         // ==================== INTERACTION: ADMIN PANEL ====================
 
         document.getElementById('btnOpenAdminPanel').addEventListener('click', () => {
@@ -1065,6 +1130,11 @@
                 const themeRadio = document.querySelector(`input[name="adminTreeTheme"][value="${activeTheme}"]`);
                 if (themeRadio) themeRadio.checked = true;
 
+                // Prepopulate current active visibility mode
+                const activeRevealMode = currentTreeData.revealMode || 'locked';
+                const visibilityRadio = document.querySelector(`input[name="adminTreeVisibility"][value="${activeRevealMode}"]`);
+                if (visibilityRadio) visibilityRadio.checked = true;
+
             } else {
                 showToast("PIN incorreto! Verifique seu código.", "fa-solid fa-circle-xmark");
             }
@@ -1074,6 +1144,7 @@
         document.getElementById('btnSaveAdminSettings').addEventListener('click', async () => {
             const newDateStr = document.getElementById('adminNewDateInput').value;
             const newTheme = document.querySelector('input[name="adminTreeTheme"]:checked').value;
+            const newRevealMode = document.querySelector('input[name="adminTreeVisibility"]:checked').value;
 
             if (!newDateStr) {
                 showToast("Selecione uma data válida.", "fa-solid fa-triangle-exclamation");
@@ -1087,7 +1158,8 @@
                 const treeDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'trees', currentTreeId);
                 await updateDoc(treeDocRef, { 
                     revealDate: newDateMs,
-                    theme: newTheme
+                    theme: newTheme,
+                    revealMode: newRevealMode
                 });
 
                 showToast("Configurações da árvore atualizadas!", "fa-solid fa-circle-check");
