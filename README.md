@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -165,7 +164,7 @@
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Código PIN do Criador (6 dígitos)</label>
                             <input type="password" id="treeAdminPin" pattern="[0-9]{6}" required maxlength="6" placeholder="Ex: 123456" 
                                    class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 tracking-widest text-center transition-all">
-                            <p class="text-[10px] text-slate-400 mt-1.5">Guarde este PIN para alterar a data limite depois!</p>
+                            <p class="text-[10px] text-slate-400 mt-1.5">Guarde este PIN para alterar o visual ou a data limite depois!</p>
                         </div>
                     </div>
 
@@ -491,7 +490,7 @@
         </div>
     </div>
 
-    <!-- MODAL 3: PAINEL DE CONTROLE DO CRIADOR (ADMIN) -->
+    <!-- MODAL 3: PAINEL DE CONTROLE DO CRIADOR (ADMIN) - ATUALIZADO COM SELETOR DE TEMAS -->
     <div id="modalAdmin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md items-center justify-center p-4 z-50 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 relative shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
             <button class="absolute top-4 right-4 text-slate-500 hover:text-slate-200 text-xl btnCloseModal">
@@ -500,7 +499,7 @@
 
             <div class="text-center">
                 <h3 class="serif-title text-xl font-bold text-yellow-400">Painel de Controle</h3>
-                <p class="text-xs text-slate-400 mt-1">Gerencie a data de liberação dos recados.</p>
+                <p class="text-xs text-slate-400 mt-1">Gerencie as regras e o visual de sua árvore.</p>
             </div>
 
             <!-- PIN Login State -->
@@ -519,19 +518,50 @@
             <div id="adminDashboardState" class="space-y-5 hidden">
                 <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 text-center">
                     <p class="text-xs text-emerald-400 font-bold flex items-center justify-center gap-1"><i class="fa-solid fa-circle-check"></i> Identidade Confirmada</p>
-                    <p class="text-slate-400 text-[10px] mt-1">Você pode alterar as regras da árvore livremente abaixo.</p>
+                    <p class="text-slate-400 text-[10px] mt-1">Você pode alterar as regras e o design livremente abaixo.</p>
                 </div>
 
                 <!-- Formulário de Alteração da Data -->
-                <div class="space-y-3">
+                <div class="space-y-2">
                     <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Nova Data e Hora Limite para Revelação</label>
                     <input type="datetime-local" id="adminNewDateInput" required
                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-yellow-500 transition-all text-sm">
                     <p class="text-[10px] text-slate-500">Se você alterar para uma data no passado, todas as mensagens serão reveladas instantaneamente.</p>
                 </div>
 
-                <button id="btnSaveNewDate" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-bold py-3 px-4 rounded-xl transition-all shadow-lg text-center flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-floppy-disk"></i> Salvar Nova Data Limite
+                <!-- Formulário de Alteração do Tema Visual (Design) -->
+                <div class="space-y-2">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Alterar Tema / Design Visual</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <!-- Clássico -->
+                        <label class="cursor-pointer group relative block">
+                            <input type="radio" name="adminTreeTheme" value="christmas" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center transition-all hover:border-emerald-600 peer-checked:border-emerald-500 peer-checked:bg-emerald-950/20">
+                                <span class="text-emerald-400 block text-lg mb-1"><i class="fa-solid fa-holly-berry"></i></span>
+                                <h4 class="font-bold text-slate-300 text-[10px]">Clássico</h4>
+                            </div>
+                        </label>
+                        <!-- Encantada -->
+                        <label class="cursor-pointer group relative block">
+                            <input type="radio" name="adminTreeTheme" value="enchanted" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center transition-all hover:border-purple-600 peer-checked:border-purple-500 peer-checked:bg-purple-950/20">
+                                <span class="text-purple-400 block text-lg mb-1"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                                <h4 class="font-bold text-slate-300 text-[10px]">Místico</h4>
+                            </div>
+                        </label>
+                        <!-- Estelar -->
+                        <label class="cursor-pointer group relative block">
+                            <input type="radio" name="adminTreeTheme" value="golden" class="peer hidden">
+                            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center transition-all hover:border-yellow-600 peer-checked:border-yellow-500 peer-checked:bg-yellow-950/20">
+                                <span class="text-yellow-400 block text-lg mb-1"><i class="fa-solid fa-crown"></i></span>
+                                <h4 class="font-bold text-slate-300 text-[10px]">Estelar</h4>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <button id="btnSaveAdminSettings" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Configurações
                 </button>
             </div>
         </div>
@@ -552,7 +582,6 @@
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuração personalizada do seu Firebase Web App
         const firebaseConfig = {
             apiKey: "AIzaSyA7sjqWxLJR1EwqrZKE4RvgINAtfWv0m9U",
             authDomain: "arvore-recados.firebaseapp.com",
@@ -562,7 +591,6 @@
             appId: "1:675694126478:web:2f20635983ad791764f0df"
         };
 
-        // Inicializando os serviços do Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -592,7 +620,7 @@
         const modalAdmin = document.getElementById('modalAdmin');
         const toastNotification = document.getElementById('toastNotification');
 
-        // Setup base path according to STRICT RULE 1
+        // Setup base paths (STRICT RULE 1)
         const getTreesCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'trees');
         const getOrnamentsCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'ornaments');
 
@@ -602,13 +630,13 @@
             // Start Snow Animation
             initSnow();
 
-            // Authentication Step with absolute fallback
+            // Authentication Step with fallback (STRICT RULE 3)
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     try {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } catch (tokenError) {
-                        console.warn("Token customizado falhou (conflito de projeto), usando autenticação anônima como fallback:", tokenError);
+                        console.warn("Token customizado falhou, usando autenticação anônima:", tokenError);
                         await signInAnonymously(auth);
                     }
                 } else {
@@ -623,7 +651,6 @@
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
-                    // Check URL for Tree ID routing
                     routeView();
                 }
             });
@@ -638,7 +665,7 @@
                 currentTreeId = treeId;
                 loadTree(treeId);
             } else {
-                // EXCLUSIVO: Se o usuário não tem o link no parâmetro, exibe apenas a tela de CRIAÇÃO da árvore!
+                // EXCLUSIVO: Se o usuário não tem o link no parâmetro, exibe apenas a tela de CRIAÇÃO
                 loadingScreen.classList.add('hidden');
                 homeScreen.classList.remove('hidden');
                 treeScreen.classList.add('hidden');
@@ -656,10 +683,9 @@
                 const treeDocSnap = await getDoc(treeDocRef);
 
                 if (!treeDocSnap.exists()) {
-                    // Se o link da URL for inválido, exibe um feedback e manda o usuário para a tela de criação
                     showToast("Árvore não encontrada! Redirecionando para criação...", "fa-solid fa-triangle-exclamation");
                     setTimeout(() => {
-                        window.location.href = window.location.pathname; // limpa a URL e redireciona para a criação
+                        window.location.href = window.location.pathname; 
                     }, 2500);
                     return;
                 }
@@ -668,7 +694,6 @@
                 renderTreeHeaderAndTheme(currentTreeData);
 
                 // Setup realtime listener for ornaments of this specific tree
-                // Rule 2: Fetch all matching tree ornaments, then filter in memory
                 const ornamentsRef = getOrnamentsCollection();
                 
                 onSnapshot(ornamentsRef, (snapshot) => {
@@ -677,17 +702,17 @@
                         allOrnaments.push({ id: doc.id, ...doc.data() });
                     });
 
-                    // In-memory filter for current tree ID
                     ornamentsList = allOrnaments.filter(o => o.treeId === currentTreeId);
                     renderOrnamentsOnTree(ornamentsList);
                 }, (error) => {
                     console.error("Error fetching ornaments:", error);
                 });
 
-                // Listen in real-time to tree configurations (in case owner updates the limit date!)
+                // Listen in real-time to tree configurations (including real-time theme / date changes!)
                 onSnapshot(treeDocRef, (snap) => {
                     if (snap.exists()) {
                         currentTreeData = snap.data();
+                        renderTreeHeaderAndTheme(currentTreeData);
                         updateCountdown();
                     }
                 });
@@ -695,7 +720,7 @@
                 // Start Live Countdown Thread
                 setInterval(updateCountdown, 1000);
 
-                // Switch UI Screens (Exibe a árvore pois o ID é válido)
+                // Switch UI Screens
                 loadingScreen.classList.add('hidden');
                 homeScreen.classList.add('hidden');
                 treeScreen.classList.remove('hidden');
@@ -724,8 +749,6 @@
 
             // Create unique alphanumeric ID
             const newTreeId = Math.random().toString(36).substring(2, 10);
-            
-            // ISO date representation
             const revealDateMs = new Date(revealStr).getTime();
 
             const newTreeData = {
@@ -739,13 +762,11 @@
             };
 
             try {
-                // Strict Path Write for Tree Definition
                 const treeDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'trees', newTreeId);
                 await setDoc(treeDocRef, newTreeData);
 
                 showToast("Sua Árvore Mágica foi gerada com sucesso!", "fa-solid fa-wand-magic-sparkles");
                 
-                // Redirect user to the tree address
                 setTimeout(() => {
                     window.location.search = `?tree=${newTreeId}`;
                 }, 1500);
@@ -766,7 +787,6 @@
             document.getElementById('svgEnchanted').classList.add('hidden');
             document.getElementById('svgGolden').classList.add('hidden');
 
-            // Ambient background controls
             const glow = document.getElementById('themeLightGlow');
 
             if (tree.theme === 'christmas') {
@@ -796,7 +816,6 @@
                 button.style.height = '32px';
                 button.style.zIndex = '30';
 
-                // Specific ornament icon & colors
                 let iconClass = 'fa-solid ';
                 let bgGradient = '';
                 let borderTheme = '';
@@ -835,9 +854,8 @@
 
                 button.innerHTML = `<span class="bg-gradient-to-b ${bgGradient} border ${borderTheme} rounded-full w-7 h-7 flex items-center justify-center text-[10px] text-white shadow-md"><i class="${iconClass}"></i></span>`;
                 
-                // Add click listener to open the message
                 button.addEventListener('click', (e) => {
-                    e.stopPropagation(); // prevent tree container click action
+                    e.stopPropagation(); 
                     openOrnamentMessage(item);
                 });
 
@@ -863,23 +881,19 @@
             const revealedStatusBanner = document.getElementById('revealedStatusBanner');
 
             if (difference <= 0) {
-                // Time's up! Unlocked state
                 countdownLabel.classList.add('hidden');
                 countdownTimer.classList.add('hidden');
                 revealedStatusBanner.classList.remove('hidden');
             } else {
-                // Locked State
                 countdownLabel.classList.remove('hidden');
                 countdownTimer.classList.remove('hidden');
                 revealedStatusBanner.classList.add('hidden');
 
-                // Compute time segments
                 const d = Math.floor(difference / (1000 * 60 * 60 * 24));
                 const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
                 const s = Math.floor((difference % (1000 * 60)) / 1000);
 
-                // Update text values
                 document.getElementById('daysVal').innerText = String(d).padStart(2, '0');
                 document.getElementById('hoursVal').innerText = String(h).padStart(2, '0');
                 document.getElementById('minsVal').innerText = String(m).padStart(2, '0');
@@ -889,17 +903,14 @@
 
         // ==================== INTERACTION: PLACE ORNAMENT ====================
 
-        // Trigger step 1: Open form modal to pick style, sender and write note
         document.getElementById('btnPrepareOrnament').addEventListener('click', () => {
             modalOrnament.classList.remove('hidden');
             modalOrnament.classList.add('flex');
         });
 
-        // Form submission inside modal: stores inputs & transitions to "Tree Positioning Mode"
         document.getElementById('ornamentForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
-            // Check form details are valid
             const sender = document.getElementById('ornamentSender').value.trim();
             const text = document.getElementById('ornamentMessage').value.trim();
 
@@ -908,37 +919,29 @@
                 return;
             }
 
-            // Hide the config modal
             closeAllModals();
 
-            // Set state to active positioning
             isPlacementActive = true;
             document.getElementById('clickPlacementInstructions').classList.remove('hidden');
             
-            // Pulse highlight effect on tree container to let user know they must click
             const treeContainer = document.getElementById('treeContainer');
             treeContainer.classList.add('ring-4', 'ring-yellow-500/50');
             
             showToast("Agora, toque/clique no local desejado na árvore!", "fa-solid fa-arrow-pointer");
         });
 
-        // Click handler on actual Tree physical canvas bounds
         document.getElementById('treeContainer').addEventListener('click', async (e) => {
             if (!isPlacementActive) return;
 
-            // Get exact bounding coordinates of clicking point inside parent tree
             const rect = e.currentTarget.getBoundingClientRect();
             const xVal = ((e.clientX - rect.left) / rect.width) * 100;
             const yVal = ((e.clientY - rect.top) / rect.height) * 100;
 
-            // Simple safety constraints so coordinates don't map outside visible zones
             const boundedX = Math.min(Math.max(xVal, 5), 95);
             const boundedY = Math.min(Math.max(yVal, 10), 90);
 
-            // Complete save workflow
             isPlacementActive = false;
             
-            // Cleanup UI indicators
             document.getElementById('clickPlacementInstructions').classList.add('hidden');
             document.getElementById('treeContainer').classList.remove('ring-4', 'ring-yellow-500/50');
 
@@ -956,14 +959,9 @@
             };
 
             try {
-                // Save directly to public collections with exact path constraints (STRICT RULE 1)
                 await addDoc(getOrnamentsCollection(), newOrnamentObj);
-                
                 showToast("Seu enfeite foi pendurado com carinho!", "fa-solid fa-circle-check");
-                
-                // Clear the form fields for next time
                 document.getElementById('ornamentForm').reset();
-
             } catch (err) {
                 console.error("Save Ornament Error:", err);
                 showToast("Erro ao gravar enfeite. Tente novamente.", "fa-solid fa-triangle-exclamation");
@@ -977,7 +975,6 @@
             const lockedState = document.getElementById('readLockedContent');
             const unlockedState = document.getElementById('readUnlockedContent');
 
-            // Format appropriate visual theme for dynamic icon modal header
             let iconMarkup = '';
             let bgGlow = '';
 
@@ -1007,22 +1004,17 @@
             iconWrapper.className = `w-20 h-20 mx-auto rounded-full flex items-center justify-center text-4xl mb-2 ${bgGlow}`;
             iconWrapper.innerHTML = iconMarkup;
 
-            // Check if unlocking date criteria is passed
             if (isRevealed()) {
-                // UNLOCKED VIEW
                 lockedState.classList.add('hidden');
                 unlockedState.classList.remove('hidden');
 
                 document.getElementById('readUnlockedSender').innerText = item.senderName;
                 document.getElementById('readUnlockedMessage').innerText = item.message;
                 
-                // Pretty date printing
                 const dateObj = new Date(item.createdAt);
                 const formatOpts = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
                 document.getElementById('readUnlockedDate').innerText = `Enviado em ${dateObj.toLocaleString('pt-BR', formatOpts)}`;
-
             } else {
-                // LOCKED VIEW
                 unlockedState.classList.add('hidden');
                 lockedState.classList.remove('hidden');
 
@@ -1036,6 +1028,7 @@
             modalReadMessage.classList.add('flex');
         }
 
+        // ==================== STREAMING_CHUNK: Lógica do Painel de Administração... ====================
         // ==================== INTERACTION: ADMIN PANEL ====================
 
         document.getElementById('btnOpenAdminPanel').addEventListener('click', () => {
@@ -1067,14 +1060,20 @@
                 };
                 document.getElementById('adminNewDateInput').value = formatLocalDate(currentTreeData.revealDate);
 
+                // Prepopulate current active visual theme
+                const activeTheme = currentTreeData.theme || 'christmas';
+                const themeRadio = document.querySelector(`input[name="adminTreeTheme"][value="${activeTheme}"]`);
+                if (themeRadio) themeRadio.checked = true;
+
             } else {
                 showToast("PIN incorreto! Verifique seu código.", "fa-solid fa-circle-xmark");
             }
         });
 
-        // Save updated reveal date handler
-        document.getElementById('btnSaveNewDate').addEventListener('click', async () => {
+        // Save updated reveal date and theme visual design
+        document.getElementById('btnSaveAdminSettings').addEventListener('click', async () => {
             const newDateStr = document.getElementById('adminNewDateInput').value;
+            const newTheme = document.querySelector('input[name="adminTreeTheme"]:checked').value;
 
             if (!newDateStr) {
                 showToast("Selecione uma data válida.", "fa-solid fa-triangle-exclamation");
@@ -1084,16 +1083,19 @@
             const newDateMs = new Date(newDateStr).getTime();
 
             try {
-                // Update specific doc in Firestore
+                // Update both configuration variables in Firestore
                 const treeDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'trees', currentTreeId);
-                await updateDoc(treeDocRef, { revealDate: newDateMs });
+                await updateDoc(treeDocRef, { 
+                    revealDate: newDateMs,
+                    theme: newTheme
+                });
 
-                showToast("Data limite atualizada com sucesso!", "fa-solid fa-circle-check");
+                showToast("Configurações da árvore atualizadas!", "fa-solid fa-circle-check");
                 closeAllModals();
 
             } catch (err) {
-                console.error("Error updating reveal date:", err);
-                showToast("Erro ao tentar atualizar a data no sistema.", "fa-solid fa-triangle-exclamation");
+                console.error("Error updating settings:", err);
+                showToast("Erro ao tentar salvar configurações.", "fa-solid fa-triangle-exclamation");
             }
         });
 
@@ -1102,7 +1104,6 @@
         document.getElementById('btnShareTree').addEventListener('click', () => {
             const pathLink = window.location.href;
             
-            // Clipboard fallback implementation as mandated in system instructions
             const inputTemp = document.createElement('input');
             inputTemp.value = pathLink;
             document.body.appendChild(inputTemp);
